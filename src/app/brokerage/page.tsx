@@ -1,11 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/app/lib/prisma";
-import ProjectDashboard from "@/app/components/ProjectDashboard";
+import BrokerageDashboard from "@/app/components/BrokerageDashboard"; // 新しい部品を読み込み
 
 export default async function Page() {
-  // 収益物件データを取得
-  const projects = await prisma.project.findMany({
+  // ★仲介案件データを取得
+  const projects = await prisma.brokerageProject.findMany({
     orderBy: { createdAt: "desc" },
     include: {
       expenses: true,
@@ -44,30 +44,25 @@ export default async function Page() {
             メニュー
           </div>
           <nav className="space-y-1 text-sm">
-            {/* ホーム（通常表示に変更） */}
             <Link 
               href="/" 
               className="block rounded px-3 py-2 text-slate-600 hover:bg-slate-50 hover:text-orange-500 transition-colors"
             >
               ホーム
             </Link>
-            
-            {/* 収益物件一覧（★ここをオレンジ色にハイライト） */}
             <Link 
               href="/" 
-              className="block rounded bg-orange-50 px-3 py-2 text-orange-600 font-bold"
+              className="block rounded px-3 py-2 text-slate-600 hover:bg-slate-50 hover:text-orange-500 transition-colors"
             >
               収益物件一覧
             </Link>
-            
-            {/* 仲介・紹介案件 */}
+            {/* ★仲介・紹介案件をアクティブに */}
             <Link 
               href="/brokerage" 
-              className="block rounded px-3 py-2 text-slate-600 hover:bg-slate-50 hover:text-orange-500 transition-colors"
+              className="block rounded bg-orange-50 px-3 py-2 text-orange-600 font-bold"
             >
               仲介・紹介案件
             </Link>
-            
             <div className="rounded px-3 py-2 text-slate-600 cursor-not-allowed opacity-50">
               企業情報管理
             </div>
@@ -77,9 +72,9 @@ export default async function Page() {
           </nav>
         </aside>
 
-        {/* 右コンテンツエリア：収益物件ダッシュボード */}
+        {/* 右コンテンツエリア：仲介用のダッシュボードを表示 */}
         <main className="flex flex-1 flex-col overflow-hidden relative">
-          <ProjectDashboard projects={projects} />
+          <BrokerageDashboard projects={projects} />
         </main>
       </div>
     </div>

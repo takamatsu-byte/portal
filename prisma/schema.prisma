@@ -1,32 +1,84 @@
-// クライアントの生成設定
+// クライアントの生成設定（そのまま）
 generator client {
   provider = "prisma-client-js"
 }
 
-// データベース接続設定
+// データベース接続設定（そのまま）
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
-// ここが足りていませんでした！↓
-// 案件データの設計図（モデル）
+// ▼ ここから下を貼り付けてください ▼
+
+// 1. 収益物件データの設計図
 model Project {
   id                String   @id @default(cuid())
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   
-  code              String   // 物件コード
-  propertyAddress   String   // 物件所在地
+  code              String
+  propertyAddress   String
   
-  // 数値項目（?がついているのは空欄OKという意味です）
-  projectTotal      Int?     // プロジェクト総額
-  expectedRent      Int?     // 想定家賃
-  expectedYieldBp   Int?     // 想定利回り
-  agentRent         Int?     // 客付け家賃
-  surfaceYieldBp    Int?     // 表面利回り
-  expectedSalePrice Int?     // 想定販売価格
-  propertyPrice     Int?     // 物件価格
-  acquisitionCost   Int?     // 買取経費
+  projectTotal      Int?
+  expectedRent      Int?
+  expectedYieldBp   Int?
+  agentRent         Int?
+  surfaceYieldBp    Int?
+  expectedSalePrice Int?
+  propertyPrice     Int?
+  
+  acquisitionCost   Int?
+  
+  expenses          ExpenseItem[]
+}
+
+// 収益物件の経費内訳
+model ExpenseItem {
+  id        String  @id @default(cuid())
+  name      String
+  price     Int
+  
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+}
+
+
+// 2. 仲介・紹介案件データの設計図
+model BrokerageProject {
+  id                String   @id @default(cuid())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  code              String
+  propertyAddress   String
+  
+  // ★追加した新しい項目（売上・日付）
+  sales             Int?
+  contractDate      String?
+  settlementDate    String?
+  
+  acquisitionCost   Int?
+  
+  // エラー防止のため古い項目も定義だけ残しておく
+  projectTotal      Int?
+  expectedRent      Int?
+  expectedYieldBp   Int?
+  agentRent         Int?
+  surfaceYieldBp    Int?
+  expectedSalePrice Int?
+  propertyPrice     Int?
+
+  expenses          BrokerageExpenseItem[]
+}
+
+// 仲介・紹介案件の経費内訳
+model BrokerageExpenseItem {
+  id        String  @id @default(cuid())
+  name      String
+  price     Int
+  
+  project   BrokerageProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
 }
