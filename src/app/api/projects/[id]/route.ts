@@ -1,24 +1,47 @@
 // src/app/api/projects/[id]/route.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+/* ---------------- utility ---------------- */
 
 function safeInt(v: unknown): number | null {
-  const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
+  const n =
+    typeof v === "number"
+      ? v
+      : typeof v === "string"
+      ? Number(v)
+      : NaN;
   if (!Number.isFinite(n)) return null;
   return Math.trunc(n);
 }
 
-function calcBp(monthlyRent: number | null, projectTotal: number | null): number | null {
-  if (!monthlyRent || !projectTotal || projectTotal <= 0) return null;
+function calcBp(
+  monthlyRent: number | null,
+  projectTotal: number | null
+): number | null {
+  if (monthlyRent === null || projectTotal === null || projectTotal <= 0)
+    return null;
   return Math.round((monthlyRent * 12 * 10000) / projectTotal);
 }
 
-export async function PUT(request: NextRequest, context: { params: { promise<{ id: string } >} {
-  const{id}  = awaitcontext.params;
-  const body = await req.json().catch(() => ({}));
+/* ---------------- PUT : 更新 ---------------- */
+
+export async function PUT(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params;
+
+  const body = await request.json().catch(() => ({}));
 
   const name = String(body?.name ?? "").trim();
-  if (!name) return NextResponse.json({ error: "物件名は必須です" }, { status: 400 });
+  if (!name) {
+    return NextResponse.json(
+      { error: "物件名は必須です" },
+      { status: 400 }
+    );
+  }
 
   const expectedRent = safeInt(body?.expectedRent);
   const agentRent = safeInt(body?.agentRent);
@@ -31,18 +54,23 @@ export async function PUT(request: NextRequest, context: { params: { promise<{ i
       name: String(x?.name ?? "").trim(),
       price: safeInt(x?.price) ?? 0,
     }))
-    .filter((x: any) => x.name || x.price);
+    .filter((x) => x.name || x.price);
 
-  const acquisitionCost = expenses.reduce((s: number, x: any) => s + (x.price ?? 0), 0) || 0;
+  const acquisitionCost =
+    expenses.reduce((s, x) => s + (x.price ?? 0), 0) || 0;
 
   const projectTotal =
-    propertyPrice === null ? null : (propertyPrice ?? 0) + (acquisitionCost ?? 0);
+    propertyPrice === null
+      ? null
+      : propertyPrice + acquisitionCost;
 
   const expectedYieldBp = calcBp(expectedRent, projectTotal);
   const surfaceYieldBp = calcBp(agentRent, projectTotal);
 
-  // 内訳は一旦全削除→再作成（簡単で確実）
-  await prisma.expenseItem.deleteMany({ where: { projectId: id } });
+  // 内訳は全削除 → 再作成
+  await prisma.expenseItem.deleteMany({
+    where: { projectId: id },
+  });
 
   const updated = await prisma.project.update({
     where: { id },
@@ -62,7 +90,10 @@ export async function PUT(request: NextRequest, context: { params: { promise<{ i
 
       expenses: expenses.length
         ? {
-            create: expenses.map((e: any) => ({ name: e.name || "-", price: e.price ?? 0 })),
+            create: expenses.map((e) => ({
+              name: e.name || "-",
+              price: e.price ?? 0,
+            })),
           }
         : undefined,
     },
@@ -72,8 +103,13 @@ export async function PUT(request: NextRequest, context: { params: { promise<{ i
   return NextResponse.json(updated);
 }
 
-export async function DELETE(_req: Request, ctx: { params: { id: string } }) {
-  const id = ctx.params.id;
+/* ---------------- DELETE : 削除 ---------------- */
+
+export async function DELETE(
+  _request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params;
 
   await prisma.project.delete({ where: { id } });
   return NextResponse.json({ ok: true });
