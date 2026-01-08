@@ -3,47 +3,33 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// 1. 物件を削除するAPI
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> } // Promise型に変更
-) {
+export async function GET() {
   try {
-    const { id } = await params; // awaitで受け取るように変更
-
-    await prisma.project.delete({
-      where: { id: id },
+    const projects = await prisma.project.findMany({
+      include: { expenses: true },
+      orderBy: { createdAt: "desc" },
     });
-
-    return NextResponse.json({ message: "削除成功" });
+    return NextResponse.json(projects);
   } catch (error) {
-    console.error("削除エラー:", error);
-    return NextResponse.json({ error: "削除失敗" }, { status: 500 });
+    return NextResponse.json({ error: "取得失敗" }, { status: 500 });
   }
 }
 
-// 2. 物件を更新するAPI
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> } // Promise型に変更
-) {
+export async function POST(request: Request) {
   try {
-    const { id } = await params; // awaitで受け取るように変更
     const json = await request.json();
-
-    // 関連する経費(expenses)を一旦すべて消してから作り直す
-    await prisma.expenseItem.deleteMany({ where: { projectId: id } });
-
-    const updated = await prisma.project.update({
-      where: { id: id },
+    const project = await prisma.project.create({
       data: {
         code: json.name,
-        propertyPrice: json.propertyPrice,
-        acquisitionCost: json.acquisitionCost,
+        propertyAddress: "-",
         projectTotal: json.projectTotal,
         expectedRent: json.expectedRent,
+        expectedYieldBp: json.expectedYield,
         agentRent: json.customerRent,
+        surfaceYieldBp: json.surfaceYield,
         expectedSalePrice: json.expectedSalePrice,
+        propertyPrice: json.propertyPrice,
+        acquisitionCost: json.acquisitionCost,
         expenses: {
           create: json.expenses.map((e: any) => ({
             name: e.label,
@@ -52,10 +38,8 @@ export async function PUT(
         },
       },
     });
-
-    return NextResponse.json(updated);
+    return NextResponse.json(project);
   } catch (error) {
-    console.error("更新エラー:", error);
-    return NextResponse.json({ error: "更新失敗" }, { status: 500 });
+    return NextResponse.json({ error: "保存失敗" }, { status: 500 });
   }
 }
