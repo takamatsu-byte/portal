@@ -90,9 +90,10 @@ export default function CreatePage() {
             >
               キャンセル
             </Link>
+            {/* 保存ボタン：指定色に変更 */}
             <button
               type="submit"
-              className="flex-1 rounded bg-orange-400 px-4 py-2 text-sm font-bold text-white hover:bg-orange-500"
+              className="flex-1 rounded bg-[#FD9D24] px-4 py-2 text-sm font-bold text-white hover:opacity-90 transition-opacity"
             >
               保存する
             </button>

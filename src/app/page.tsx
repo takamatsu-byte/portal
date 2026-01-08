@@ -18,8 +18,8 @@ export default async function Page() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* ヘッダー */}
-      <header className="bg-orange-400">
+      {/* ヘッダー：ご指定のオレンジ色（#FD9D24）に変更 */}
+      <header className="bg-[#FD9D24]">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="rounded bg-white px-4 py-2 text-sm font-semibold">
             株式会社アキサス
@@ -149,11 +149,11 @@ export default async function Page() {
               </div>
             </div>
 
-            {/* 右下の＋ボタン（ここをリンクに変更しました！） */}
+            {/* 右下の＋ボタン：こちらも指定色に変更 */}
             <div className="fixed bottom-6 right-6">
               <Link
                 href="/create"
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-400 text-2xl text-white shadow-lg hover:bg-orange-500 transition-colors"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FD9D24] text-2xl text-white shadow-lg hover:opacity-90 transition-opacity"
               >
                 +
               </Link>
