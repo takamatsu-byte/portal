@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 
 type CostItem = {
@@ -150,6 +150,21 @@ export default function Page() {
     }
   }
 
+  // --- 削除処理 ---
+  async function onDelete() {
+    if (!selectedId) return;
+    const ok = window.confirm("この物件を削除しますか？");
+    if (!ok) return;
+
+    try {
+      const res = await fetch(`/api/projects/${selectedId}`, { method: "DELETE" });
+      if (res.ok) window.location.reload();
+      else alert("削除に失敗しました");
+    } catch (err) {
+      alert("通信エラーが発生しました");
+    }
+  }
+
   function toggleExpanded(id: string) {
     setExpandedIds(prev => ({ ...prev, [id]: !prev[id] }));
   }
@@ -164,7 +179,7 @@ export default function Page() {
           <Image src="/logo.png" alt="PORTAL ロゴ" width={52} height={52} className="mr-4" priority />
           <span className="font-extrabold tracking-wide text-slate-800 text-2xl">PORTAL</span>
         </div>
-        <nav className="flex-1 px-3 py-6 space-y-2 overflow-hidden">
+        <nav className="flex-1 px-3 py-6 space-y-2">
           <div className="flex items-center px-4 py-3 rounded-xl font-semibold bg-white text-[#FD9D24] shadow-sm">収益物件一覧</div>
           <div className="flex items-center px-4 py-3 rounded-xl font-semibold text-white hover:bg-white/15 cursor-pointer">顧客管理</div>
         </nav>
@@ -172,13 +187,40 @@ export default function Page() {
 
       {/* メイン */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white h-28 border-b border-slate-100 flex items-center justify-end px-8">
-          <button onClick={() => { setForm({ name: "", assumedRentYen: "", customerRentYen: "", expectedSalePriceYen: "", propertyPriceYen: "", buyCostItems: ensureTrailingEmptyCostRow([{ id: uid(), label: "", amount: "" }]) }); setIsPanelOpen(true); }} className="bg-[#FD9D24] text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-orange-100 transition-transform active:scale-95">
-            + 新規追加
-          </button>
-        </header>
+        {/* ヘッダーボタンセット復活 */}
+        <div className="bg-white h-28 border-b border-slate-100 flex items-center">
+          <header className="w-full px-8 flex items-center justify-end h-full">
+            <div className="inline-flex items-center rounded-full border border-slate-200 bg-white shadow-sm overflow-hidden my-auto">
+              <button
+                onClick={() => { setMode("create"); setIsPanelOpen(true); }}
+                className="group px-4 h-11 inline-flex items-center gap-2 font-semibold text-slate-700 hover:text-white transition hover:bg-[#FD9D24]"
+                title="追加"
+              >
+                <span className="text-lg font-extrabold leading-none text-[#FD9D24] group-hover:text-white">+</span>
+                <span className="text-sm">追加</span>
+              </button>
+              <div className="w-px h-7 bg-slate-200" />
+              <button
+                disabled={!selectedId}
+                className={`px-4 h-11 inline-flex items-center gap-2 font-semibold transition ${selectedId ? "text-slate-700 hover:text-white hover:bg-[#FD9D24]" : "text-slate-300 cursor-not-allowed"}`}
+                title="編集"
+              >
+                <span className="text-sm">編集</span>
+              </button>
+              <div className="w-px h-7 bg-slate-200" />
+              <button
+                onClick={onDelete}
+                disabled={!selectedId}
+                className={`px-4 h-11 inline-flex items-center gap-2 font-semibold transition ${selectedId ? "text-slate-700 hover:text-white hover:bg-[#FD9D24]" : "text-slate-300 cursor-not-allowed"}`}
+                title="削除"
+              >
+                <span className="text-sm">削除</span>
+              </button>
+            </div>
+          </header>
+        </div>
 
-        <div className="flex-1 overflow-hidden p-8 relative flex flex-col">
+        <div className="flex-1 overflow-hidden p-8 flex flex-col">
           <div className="mb-6">
             <div className="bg-white p-4 rounded-xl border border-slate-100 w-56">
               <p className="text-xs font-semibold text-slate-500">登録物件数</p>
@@ -186,9 +228,8 @@ export default function Page() {
             </div>
           </div>
 
-          {/* テーブル外枠 */}
           <div className="bg-white rounded-xl border border-slate-100 overflow-hidden flex flex-col h-[calc(100%-88px)]">
-            <div className="flex-1 overflow-y-auto overflow-x-auto snap-y snap-mandatory scroll-smooth">
+            <div className="flex-1 overflow-y-auto overflow-x-auto">
               <table className="min-w-[1200px] w-full font-semibold text-center border-collapse">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-100 text-sm text-slate-600 sticky top-0 z-20">
@@ -203,11 +244,13 @@ export default function Page() {
                     <th className="px-4 py-4">買取経費</th>
                   </tr>
                 </thead>
-
                 <tbody className="divide-y divide-slate-100 text-slate-700">
                   {properties.map((p, idx) => (
                     <React.Fragment key={p.id}>
-                      <tr className={["cursor-pointer snap-start transition-colors", selectedId === p.id ? "bg-orange-50/80" : idx % 2 === 0 ? "bg-white" : "bg-slate-50/30", "hover:bg-orange-50/40"].join(" ")} onClick={() => setSelectedId(p.id)}>
+                      <tr 
+                        className={`cursor-pointer transition-colors ${selectedId === p.id ? "bg-orange-50/80" : idx % 2 === 0 ? "bg-white" : "bg-slate-50/30"} hover:bg-orange-50/40`} 
+                        onClick={() => setSelectedId(p.id)}
+                      >
                         <td className="px-6 py-5 whitespace-nowrap text-left sticky left-0 z-10 bg-inherit border-r border-slate-100/50 font-bold">{p.name}</td>
                         <td className="px-4 py-5 whitespace-nowrap">{p.projectTotalYen}</td>
                         <td className="px-4 py-5 whitespace-nowrap">{p.assumedRentYen}</td>
@@ -228,7 +271,7 @@ export default function Page() {
                         </td>
                       </tr>
                       {expandedIds[p.id] && (
-                        <tr className="bg-slate-50/50 snap-none">
+                        <tr className="bg-slate-50/50">
                           <td colSpan={9} className="px-6 py-4">
                             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm text-sm text-slate-800 text-left font-medium">
                               <span className="text-slate-400 mr-2">【内訳】</span>
@@ -249,40 +292,31 @@ export default function Page() {
         {isPanelOpen && (
           <div className="fixed inset-0 z-50 flex justify-end">
             <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsPanelOpen(false)} />
-            <div className="relative w-[640px] max-w-[95vw] bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="relative w-[640px] max-w-[95vw] bg-white h-full shadow-2xl flex flex-col">
               <div className="h-20 flex items-center justify-between px-8 border-b border-slate-100">
                 <h2 className="text-xl font-bold text-slate-800">新規物件登録</h2>
-                <button onClick={() => setIsPanelOpen(false)} className="p-2 hover:bg-slate-100 rounded-full">✕</button>
+                <button onClick={() => setIsPanelOpen(false)} className="p-2 hover:bg-slate-100 rounded-full text-xl">✕</button>
               </div>
-
               <form onSubmit={upsertProperty} className="flex-1 overflow-auto p-8 space-y-6">
-                <FieldZenkaku label="物件名（必須）" value={form.name} onChange={(v: string) => setForm({ ...form, name: toZenkakuLoose(v) })} placeholder="例）アキサスハイツ東京" required />
-                <FieldHankakuNumber label="物件価格（円）" value={form.propertyPriceYen} onChange={(v: string) => setForm({ ...form, propertyPriceYen: toHankakuNumberOnly(v) })} placeholder="例）78000000" />
-                
-                <div className="rounded-2xl border border-slate-200 p-6 bg-slate-50/50">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="text-sm font-bold text-slate-800">買取経費（内訳）</div>
-                    <button type="button" onClick={() => setForm({ ...form, buyCostItems: ensureTrailingEmptyCostRow([...form.buyCostItems, { id: uid(), label: "", amount: "" }]) })} className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[#FD9D24] hover:bg-[#FD9D24] hover:text-white transition-colors">
-                      <span className="text-xl font-bold">+</span>
-                    </button>
+                <FieldZenkaku label="物件名" value={form.name} onChange={(v: string) => setForm({ ...form, name: toZenkakuLoose(v) })} required />
+                <FieldHankakuNumber label="物件価格" value={form.propertyPriceYen} onChange={(v: string) => setForm({ ...form, propertyPriceYen: toHankakuNumberOnly(v) })} />
+                <div className="rounded-2xl border border-slate-200 p-6 bg-slate-50/50 space-y-3">
+                  <div className="flex items-center justify-between mb-2 font-bold text-sm">買取経費（内訳）
+                    <button type="button" onClick={() => setForm({ ...form, buyCostItems: ensureTrailingEmptyCostRow([...form.buyCostItems, { id: uid(), label: "", amount: "" }]) })} className="w-8 h-8 rounded-full bg-white border flex items-center justify-center text-[#FD9D24] shadow-sm">+</button>
                   </div>
-                  <div className="space-y-3">
-                    {form.buyCostItems.map((item) => (
-                      <div key={item.id} className="flex gap-2">
-                        <input value={item.label} onChange={(e) => { const next = form.buyCostItems.map(x => x.id === item.id ? { ...x, label: toZenkakuLoose(e.target.value) } : x); setForm({ ...form, buyCostItems: ensureTrailingEmptyCostRow(next) }); }} placeholder="項目" className="flex-1 rounded-xl border border-slate-200 px-4 py-2" />
-                        <input value={item.amount} onChange={(e) => { const next = form.buyCostItems.map(x => x.id === item.id ? { ...x, amount: toHankakuNumberOnly(e.target.value) } : x); setForm({ ...form, buyCostItems: ensureTrailingEmptyCostRow(next) }); }} placeholder="金額" className="w-36 rounded-xl border border-slate-200 px-4 py-2" />
-                      </div>
-                    ))}
-                  </div>
+                  {form.buyCostItems.map((item) => (
+                    <div key={item.id} className="flex gap-2">
+                      <input value={item.label} onChange={(e) => { const next = form.buyCostItems.map(x => x.id === item.id ? { ...x, label: toZenkakuLoose(e.target.value) } : x); setForm({ ...form, buyCostItems: ensureTrailingEmptyCostRow(next) }); }} placeholder="項目" className="flex-1 rounded-xl border border-slate-200 px-4 py-2" />
+                      <input value={item.amount} onChange={(e) => { const next = form.buyCostItems.map(x => x.id === item.id ? { ...x, amount: toHankakuNumberOnly(e.target.value) } : x); setForm({ ...form, buyCostItems: ensureTrailingEmptyCostRow(next) }); }} placeholder="金額" className="w-32 rounded-xl border border-slate-200 px-4 py-2" />
+                    </div>
+                  ))}
                 </div>
-
-                <FieldHankakuNumber label="想定家賃（円）" value={form.assumedRentYen} onChange={(v: string) => setForm({ ...form, assumedRentYen: toHankakuNumberOnly(v) })} />
-                <FieldHankakuNumber label="客付け家賃（円）" value={form.customerRentYen} onChange={(v: string) => setForm({ ...form, customerRentYen: toHankakuNumberOnly(v) })} />
-                <FieldHankakuNumber label="想定販売価格（円）" value={form.expectedSalePriceYen} onChange={(v: string) => setForm({ ...form, expectedSalePriceYen: toHankakuNumberOnly(v) })} />
-
+                <FieldHankakuNumber label="想定家賃" value={form.assumedRentYen} onChange={(v: string) => setForm({ ...form, assumedRentYen: toHankakuNumberOnly(v) })} />
+                <FieldHankakuNumber label="客付け家賃" value={form.customerRentYen} onChange={(v: string) => setForm({ ...form, customerRentYen: toHankakuNumberOnly(v) })} />
+                <FieldHankakuNumber label="想定販売価格" value={form.expectedSalePriceYen} onChange={(v: string) => setForm({ ...form, expectedSalePriceYen: toHankakuNumberOnly(v) })} />
                 <div className="pt-6 border-t flex gap-4 bg-white sticky bottom-0">
                   <button type="button" onClick={() => setIsPanelOpen(false)} className="flex-1 border py-4 rounded-xl font-bold">キャンセル</button>
-                  <button type="submit" className="flex-1 bg-[#FD9D24] text-white py-4 rounded-xl font-bold shadow-lg shadow-orange-200 transition-transform active:scale-95">保存する</button>
+                  <button type="submit" className="flex-1 bg-[#FD9D24] text-white py-4 rounded-xl font-bold">保存する</button>
                 </div>
               </form>
             </div>
@@ -293,11 +327,10 @@ export default function Page() {
   );
 }
 
-// フォーム部品
 function FieldZenkaku(props: any) {
   return (
-    <label className="block">
-      <div className="text-sm font-bold text-slate-700 mb-2 ml-1">{props.label}</div>
+    <label className="block space-y-2">
+      <div className="text-sm font-bold text-slate-700 ml-1">{props.label}</div>
       <input {...props} onChange={(e) => props.onChange(e.target.value)} className="w-full rounded-xl border border-slate-200 px-5 py-4 outline-none focus:ring-2 focus:ring-orange-200 bg-white" />
     </label>
   );
@@ -305,8 +338,8 @@ function FieldZenkaku(props: any) {
 
 function FieldHankakuNumber(props: any) {
   return (
-    <label className="block">
-      <div className="text-sm font-bold text-slate-700 mb-2 ml-1">{props.label}</div>
+    <label className="block space-y-2">
+      <div className="text-sm font-bold text-slate-700 ml-1">{props.label}</div>
       <input {...props} onChange={(e) => props.onChange(e.target.value)} inputMode="numeric" className="w-full rounded-xl border border-slate-200 px-5 py-4 outline-none focus:ring-2 focus:ring-orange-200 bg-white" />
     </label>
   );
