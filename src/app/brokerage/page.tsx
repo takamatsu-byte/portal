@@ -172,7 +172,8 @@ export default function Page() {
     buyCostItems: ensureTrailingEmptyCostRow([{ id: uid(), label: "", amount: "" }]),
   });
 
-  const active = "収益物件一覧";
+  // --- 修正箇所：型を string | null に指定して、他の文字列との比較を許可する ---
+  const active: string = "収益物件一覧";
 
   function resetForm() {
     setForm({
@@ -383,7 +384,6 @@ export default function Page() {
             </div>
           </div>
 
-          {/* 青枠の部分だけスクロール：ここだけ overflow */}
           <div className="bg-white rounded-xl border border-slate-100 overflow-hidden flex flex-col h-[calc(100%-88px)]">
             <div className="flex-1 overflow-y-auto overflow-x-auto">
               <table className="min-w-[1200px] w-full font-semibold text-center">
@@ -437,7 +437,6 @@ export default function Page() {
                                 aria-label="買取経費の内訳を表示"
                                 title={isExpanded ? "内訳を閉じる" : "内訳を開く"}
                               >
-                                {/* ◢を90度右回転（右向き三角に） */}
                                 <span
                                   className="absolute right-1 bottom-1 w-0 h-0"
                                   style={{
@@ -471,7 +470,6 @@ export default function Page() {
             </div>
           </div>
 
-          {/* 右サイド登録フォーム（背景クリックで閉じる） */}
           {isPanelOpen && (
             <div className="fixed inset-0 z-40">
               <button className="absolute inset-0 bg-black/20" onClick={() => setIsPanelOpen(false)} aria-label="背景クリックで閉じる" />
@@ -514,8 +512,6 @@ export default function Page() {
                       <div className="rounded-xl border border-slate-200 p-4">
                         <div className="flex items-center justify-between mb-3">
                           <div className="text-sm font-semibold text-slate-800">買取経費（内訳）</div>
-
-                          {/* ＋ボタン：ホバーでオレンジ背景、白抜き */}
                           <button
                             type="button"
                             onClick={() =>
@@ -647,7 +643,6 @@ export default function Page() {
             </div>
           )}
 
-          {/* 内訳モーダル */}
           {modalTarget && (
             <div className="fixed inset-0 z-50 flex items-center justify-center">
               <button className="absolute inset-0 bg-black/30" onClick={() => setModalTarget(null)} aria-label="閉じる" />
