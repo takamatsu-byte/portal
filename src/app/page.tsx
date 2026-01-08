@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image"; // 画像表示用の部品をインポート
 import { prisma } from "@/app/lib/prisma";
 
 function yen(n: number | null | undefined) {
@@ -18,12 +19,22 @@ export default async function Page() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* ヘッダー：ご指定のオレンジ色（#FD9D24）に変更 */}
+      {/* ヘッダー：オレンジ色（#FD9D24） */}
       <header className="bg-[#FD9D24]">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="rounded bg-white px-4 py-2 text-sm font-semibold">
-            株式会社アキサス
+          
+          {/* ロゴ部分：テキストから画像に変更し、背景を白に設定 */}
+          <div className="rounded bg-white p-2 shadow-sm">
+            <Image
+              src="/logo.png" // publicフォルダに入れた画像ファイル名
+              alt="株式会社アキサス"
+              width={200} // 画像の幅（適宜調整してください）
+              height={50} // 画像の高さ（適宜調整してください）
+              className="h-auto w-auto object-contain" // アスペクト比を維持してきれいに表示
+              priority // 重要な画像なので優先的に読み込む
+            />
           </div>
+
           <div className="flex items-center gap-3 text-white">
             <span className="text-sm">〇〇様</span>
             <div className="h-8 w-8 rounded-full bg-white/30" />
@@ -149,7 +160,7 @@ export default async function Page() {
               </div>
             </div>
 
-            {/* 右下の＋ボタン：こちらも指定色に変更 */}
+            {/* 右下の＋ボタン：指定色（#FD9D24） */}
             <div className="fixed bottom-6 right-6">
               <Link
                 href="/create"
