@@ -1,0 +1,11 @@
+// prisma/schema.prisma
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")      // 1-①の変数
+  directUrl = env("DIRECT_URL")        // 1-②の変数
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
