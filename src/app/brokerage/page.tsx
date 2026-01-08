@@ -153,18 +153,18 @@ export default function Page() {
         <div className="flex-1 overflow-hidden p-8 flex flex-col">
           <div className="mb-6"><div className="bg-white p-4 rounded-xl border border-slate-100 w-56"><p className="text-xs font-semibold text-slate-500">登録物件数</p><p className="text-2xl font-bold text-slate-800 mt-1">{properties.length}件</p></div></div>
           
-          <div className="flex-1 bg-white rounded-xl border border-slate-100 overflow-hidden flex flex-col h-full shadow-sm">
+          <div className="flex-1 bg-white rounded-xl border border-slate-100 overflow-hidden flex flex-col h-full shadow-sm text-center">
             <div className="flex-1 overflow-auto">
-              <table className="min-w-full font-semibold text-center border-collapse">
+              <table className="min-w-full font-semibold border-collapse">
                 <thead>
-                  <tr className="bg-slate-50/80 border-b border-slate-100 text-xs text-slate-500 sticky top-0 z-20 uppercase tracking-wider h-14">
+                  <tr className="bg-slate-50/80 border-b border-slate-100 text-xs text-slate-500 sticky top-0 z-20 uppercase tracking-wider h-14 text-center">
                     <th className="px-6 text-left sticky left-0 bg-slate-50 z-30 shadow-[1px_0_0_0_rgba(0,0,0,0.05)]">物件名</th>
-                    <th>総額</th><th>想定家賃</th><th>想定利回り</th><th>客付け家賃</th><th>表面利回り</th><th>想定販売価格</th><th>物件価格</th><th>買取経費</th>
+                    <th className="px-4">総額</th><th className="px-4">想定家賃</th><th className="px-4">想定利回り</th><th className="px-4">客付け家賃</th><th className="px-4">表面利回り</th><th className="px-4">想定販売価格</th><th className="px-4">物件価格</th><th className="px-4">買取経費</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 text-slate-700">
                   {properties.map((p) => (
-                    <tr key={p.id} className={`group cursor-pointer transition-colors ${selectedId === p.id ? "bg-orange-50/60" : "bg-white"} hover:bg-orange-50/30`} onClick={() => setSelectedId(p.id)}>
+                    <tr key={p.id} className={`group cursor-pointer transition-colors ${selectedId === p.id ? "bg-orange-50/60" : "bg-white"} hover:bg-orange-50/30 text-center`} onClick={() => setSelectedId(p.id)}>
                       <td className="px-6 py-5 whitespace-nowrap text-left sticky left-0 z-10 bg-inherit border-r border-slate-100/50 font-bold">{p.name}</td>
                       <td className="px-4 py-5">{formatNumber(p.projectTotal)}</td>
                       <td className="px-4 py-5">{formatNumber(p.assumedRent)}</td>
@@ -173,7 +173,7 @@ export default function Page() {
                       <td className="px-4 py-5">{p.surfaceYield}</td>
                       <td className="px-4 py-5">{formatNumber(p.expectedSalePrice)}</td>
                       <td className="px-4 py-5">{formatNumber(p.propertyPrice)}</td>
-                      <td className="px-4 py-5 text-center font-bold text-slate-800 select-none" onDoubleClick={() => setModalTarget(p)}>
+                      <td className="px-4 py-5 font-bold text-slate-800 select-none" onDoubleClick={() => setModalTarget(p)}>
                         {formatNumber(p.buyCostTotal)}
                       </td>
                     </tr>
@@ -184,7 +184,6 @@ export default function Page() {
           </div>
         </div>
 
-        {/* 右サイドパネル */}
         {isPanelOpen && (
           <div className="fixed inset-0 z-50 flex justify-end">
             <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setIsPanelOpen(false)} />
@@ -194,8 +193,8 @@ export default function Page() {
                 <button onClick={() => setIsPanelOpen(false)} className="text-2xl text-slate-400 hover:text-slate-600">✕</button>
               </div>
               <form onSubmit={upsertProperty} className="flex-1 overflow-auto p-8 space-y-6">
-                <FieldZenkaku label="物件名" value={form.name} onChange={(v) => setForm({ ...form, name: v })} placeholder="物件名を入力してください" required />
-                <FieldNumeric label="物件価格" value={form.propertyPrice} onChange={(v) => setForm({ ...form, propertyPrice: v })} />
+                <FieldZenkaku label="物件名" value={form.name} onChange={(v: string) => setForm({ ...form, name: v })} placeholder="物件名を入力してください" required />
+                <FieldNumeric label="物件価格" value={form.propertyPrice} onChange={(v: string) => setForm({ ...form, propertyPrice: v })} />
                 
                 <div className="rounded-2xl border border-slate-100 p-6 bg-slate-50/50 space-y-4">
                   <div className="flex items-center justify-between font-bold text-sm text-slate-800">買取経費 内訳
@@ -210,10 +209,10 @@ export default function Page() {
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
-                  <FieldNumeric label="想定家賃" value={form.assumedRent} onChange={(v) => setForm({ ...form, assumedRent: v })} />
-                  <FieldNumeric label="客付け家賃" value={form.customerRent} onChange={(v) => setForm({ ...form, customerRent: v })} />
+                  <FieldNumeric label="想定家賃" value={form.assumedRent} onChange={(v: string) => setForm({ ...form, assumedRent: v })} />
+                  <FieldNumeric label="客付け家賃" value={form.customerRent} onChange={(v: string) => setForm({ ...form, customerRent: v })} />
                 </div>
-                <FieldNumeric label="想定販売価格" value={form.expectedSalePrice} onChange={(v) => setForm({ ...form, expectedSalePrice: v })} />
+                <FieldNumeric label="想定販売価格" value={form.expectedSalePrice} onChange={(v: string) => setForm({ ...form, expectedSalePrice: v })} />
 
                 <div className="pt-6 flex gap-4 bg-white sticky bottom-0">
                   <button type="button" onClick={() => setIsPanelOpen(false)} className="flex-1 border-2 border-slate-100 py-4 rounded-xl font-bold text-slate-400 hover:bg-slate-50 transition-colors">キャンセル</button>
@@ -228,9 +227,9 @@ export default function Page() {
         {modalTarget && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setModalTarget(null)} />
-            <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in duration-150">
+            <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in duration-150 text-center">
               <div className="p-8">
-                <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center justify-center gap-2">
                   <span className="w-1.5 h-6 bg-[#FD9D24] rounded-full"></span>
                   買取経費の内訳
                 </h3>
@@ -256,8 +255,7 @@ export default function Page() {
   );
 }
 
-// 物件名・項目用（全角・制限なし）
-function FieldZenkaku({ label, value, onChange, placeholder, required }: any) {
+function FieldZenkaku({ label, value, onChange, placeholder, required }: { label: string, value: string, onChange: (v: string) => void, placeholder?: string, required?: boolean }) {
   return (
     <label className="block">
       <div className="text-xs font-bold text-slate-400 mb-2 ml-1 uppercase tracking-wider">{label}</div>
@@ -266,20 +264,16 @@ function FieldZenkaku({ label, value, onChange, placeholder, required }: any) {
   );
 }
 
-// 数値用（半角・円なし、入力挙動修正済み）
-function FieldNumeric({ label, value, onChange }: any) {
+function FieldNumeric({ label, value, onChange }: { label: string, value: string, onChange: (v: string) => void }) {
   return (
     <label className="block">
       <div className="text-xs font-bold text-slate-400 mb-2 ml-1 uppercase tracking-wider">{label}</div>
       <input type="text" inputMode="numeric" value={value} 
         onChange={(e) => {
-          // 数字・全角数字以外をまず除外
           const raw = e.target.value.replace(/[^0-9０-９]/g, '');
-          // 内部ではそのまま保持（変換しないことで入力バグを回避）
           onChange(raw);
         }}
         onBlur={(e) => {
-          // 入力が終わった時（フォーカスが外れた時）に半角に強制変換
           const half = e.target.value.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
           onChange(half);
         }}
