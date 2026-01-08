@@ -1,32 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { createProject } from "@/app/actions"; // さっき作った保存機能を読み込み
+import { createProject } from "@/app/actions";
 
-// 数値フォーマット関数
+// 金額フォーマット（円）
 function yen(n: number | null | undefined) {
   if (n === null || n === undefined) return "—";
   return `${n.toLocaleString("ja-JP")} 円`;
 }
 
+// 利回りフォーマット（%）
 function pctFromBp(bp: number | null | undefined) {
   if (bp === null || bp === undefined) return "—";
   return `${(bp / 100).toFixed(2)}%`;
 }
 
-// ここがメインの部品です
 export default function ProjectDashboard({ projects }: { projects: any[] }) {
-  // フォームが開いているかどうかのスイッチ（最初は閉じている）
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   return (
     <div className="relative">
       
-      {/* メインエリア：フレックスボックスで横並びに対応 */}
       <div className="flex items-start gap-4">
         
-        {/* 左側：案件一覧（フォームが開くと幅が縮みます） */}
+        {/* 左側：案件一覧 */}
         <div className={`${isFormOpen ? "w-2/3" : "w-full"} transition-all duration-300`}>
           <div className="mb-4 flex items-center justify-between">
             <div>
@@ -46,14 +43,14 @@ export default function ProjectDashboard({ projects }: { projects: any[] }) {
               <div className="text-sm text-slate-500">件数：{projects.length}</div>
             </div>
 
-            <div className="divide-y">
+            <div className="divide-y overflow-x-auto">
               {projects.length === 0 && (
                 <div className="p-8 text-center text-slate-500">
                   まだ案件がありません。右下の「＋」ボタンを押してください。
                 </div>
               )}
               {projects.map((p) => (
-                <div key={p.id} className="p-4">
+                <div key={p.id} className="p-4 min-w-[1000px]">
                   <div className="mb-2 flex items-start justify-between gap-3">
                     <div className="text-sm text-slate-600">
                       <span className="font-semibold text-slate-700">物件所在地：</span>{" "}
@@ -64,30 +61,28 @@ export default function ProjectDashboard({ projects }: { projects: any[] }) {
                     </button>
                   </div>
 
-                  <div className="overflow-x-auto rounded-lg border">
-                    <table className="min-w-[900px] w-full text-sm">
-                      <thead className="bg-slate-50 text-slate-600">
-                        <tr className="border-b">
-                          <th className="px-3 py-2 text-left">プロジェクト総額</th>
-                          <th className="px-3 py-2 text-left">想定家賃</th>
-                          <th className="px-3 py-2 text-left">想定利回り</th>
-                          <th className="px-3 py-2 text-left">客付け家賃</th>
-                          <th className="px-3 py-2 text-left">表面利回り</th>
-                          <th className="px-3 py-2 text-left">想定販売価格</th>
-                          <th className="px-3 py-2 text-left">物件価格</th>
-                          <th className="px-3 py-2 text-left">買取経費</th>
+                  <div className="rounded-lg border bg-slate-50 p-2">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-slate-500 text-xs">
+                          <th className="px-2 py-1 text-left">プロジェクト総額</th>
+                          <th className="px-2 py-1 text-left">想定家賃</th>
+                          <th className="px-2 py-1 text-left">想定利回り</th>
+                          <th className="px-2 py-1 text-left">客付け家賃</th>
+                          <th className="px-2 py-1 text-left">表面利回り</th>
+                          <th className="px-2 py-1 text-left">物件価格</th>
+                          <th className="px-2 py-1 text-left">買取経費</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr className="bg-white">
-                          <td className="px-3 py-3">{yen(p.projectTotal)}</td>
-                          <td className="px-3 py-3">{yen(p.expectedRent)}</td>
-                          <td className="px-3 py-3">{pctFromBp(p.expectedYieldBp)}</td>
-                          <td className="px-3 py-3">{yen(p.agentRent)}</td>
-                          <td className="px-3 py-3">{pctFromBp(p.surfaceYieldBp)}</td>
-                          <td className="px-3 py-3">{yen(p.expectedSalePrice)}</td>
-                          <td className="px-3 py-3">{yen(p.propertyPrice)}</td>
-                          <td className="px-3 py-3">{yen(p.acquisitionCost)}</td>
+                        <tr className="font-medium text-slate-800">
+                          <td className="px-2 py-1">{yen(p.projectTotal)}</td>
+                          <td className="px-2 py-1">{yen(p.expectedRent)}</td>
+                          <td className="px-2 py-1">{pctFromBp(p.expectedYieldBp)}</td>
+                          <td className="px-2 py-1">{yen(p.agentRent)}</td>
+                          <td className="px-2 py-1">{pctFromBp(p.surfaceYieldBp)}</td>
+                          <td className="px-2 py-1">{yen(p.propertyPrice)}</td>
+                          <td className="px-2 py-1">{yen(p.acquisitionCost)}</td>
                         </tr>
                       </tbody>
                     </table>
@@ -98,9 +93,9 @@ export default function ProjectDashboard({ projects }: { projects: any[] }) {
           </div>
         </div>
 
-        {/* 右側：入力フォーム（isFormOpenがtrueの時だけ表示） */}
+        {/* 右側：新規登録フォーム */}
         {isFormOpen && (
-          <div className="w-1/3 min-w-[320px] rounded-lg border bg-white p-6 shadow-xl animate-in slide-in-from-right-10 duration-300">
+          <div className="w-1/3 min-w-[350px] rounded-lg border bg-white p-6 shadow-xl animate-in slide-in-from-right-10 duration-300">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-800">新規案件登録</h2>
               <button 
@@ -112,45 +107,116 @@ export default function ProjectDashboard({ projects }: { projects: any[] }) {
             </div>
             
             <form action={async (formData) => {
-                await createProject(formData); // データを保存
-                setIsFormOpen(false); // 保存したら閉じる
-            }} className="space-y-4">
+                await createProject(formData);
+                setIsFormOpen(false);
+            }} className="space-y-4 max-h-[80vh] overflow-y-auto pr-2">
               
+              {/* 1. 物件所在地 */}
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  物件コード (必須)
-                </label>
-                <input
-                  name="code"
-                  type="text"
-                  required
-                  className="w-full rounded border px-3 py-2 text-slate-700"
-                  placeholder="例: P-001"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  物件所在地
+                <label className="mb-1 block text-xs font-bold text-slate-500">
+                  物件所在地 <span className="text-red-500">*</span>
                 </label>
                 <input
                   name="address"
                   type="text"
                   required
-                  className="w-full rounded border px-3 py-2 text-slate-700"
-                  placeholder="例: 東京都港区..."
+                  className="w-full rounded border px-3 py-2 text-sm text-slate-700"
+                  placeholder="例: 東京都..."
                 />
               </div>
 
+              {/* 2. プロジェクト総額 */}
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
+                <label className="mb-1 block text-xs font-bold text-slate-500">
                   プロジェクト総額 (円)
                 </label>
                 <input
-                  name="price"
+                  name="projectTotal"
                   type="number"
-                  className="w-full rounded border px-3 py-2 text-slate-700"
-                  placeholder="10000000"
+                  className="w-full rounded border px-3 py-2 text-sm text-slate-700"
+                  placeholder="0"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {/* 3. 想定家賃 */}
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-slate-500">
+                    想定家賃 (円)
+                  </label>
+                  <input
+                    name="expectedRent"
+                    type="number"
+                    className="w-full rounded border px-3 py-2 text-sm text-slate-700"
+                    placeholder="0"
+                  />
+                </div>
+                {/* 4. 想定利回り */}
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-slate-500">
+                    想定利回り (%)
+                  </label>
+                  <input
+                    name="expectedYield"
+                    type="number"
+                    step="0.01"
+                    className="w-full rounded border px-3 py-2 text-sm text-slate-700"
+                    placeholder="例: 5.5"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {/* 5. 客付け家賃 */}
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-slate-500">
+                    客付け家賃 (円)
+                  </label>
+                  <input
+                    name="agentRent"
+                    type="number"
+                    className="w-full rounded border px-3 py-2 text-sm text-slate-700"
+                    placeholder="0"
+                  />
+                </div>
+                {/* 6. 表面利回り */}
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-slate-500">
+                    表面利回り (%)
+                  </label>
+                  <input
+                    name="surfaceYield"
+                    type="number"
+                    step="0.01"
+                    className="w-full rounded border px-3 py-2 text-sm text-slate-700"
+                    placeholder="例: 6.0"
+                  />
+                </div>
+              </div>
+
+              {/* 7. 物件価格 */}
+              <div>
+                <label className="mb-1 block text-xs font-bold text-slate-500">
+                  物件価格 (円)
+                </label>
+                <input
+                  name="propertyPrice"
+                  type="number"
+                  className="w-full rounded border px-3 py-2 text-sm text-slate-700"
+                  placeholder="0"
+                />
+              </div>
+
+              {/* 8. 買取経費 */}
+              <div>
+                <label className="mb-1 block text-xs font-bold text-slate-500">
+                  買取経費 (円)
+                </label>
+                <input
+                  name="acquisitionCost"
+                  type="number"
+                  className="w-full rounded border px-3 py-2 text-sm text-slate-700"
+                  placeholder="0"
                 />
               </div>
 
@@ -174,10 +240,9 @@ export default function ProjectDashboard({ projects }: { projects: any[] }) {
         )}
       </div>
 
-      {/* 右下の＋ボタン：クリックするとフォームの開閉を切り替え */}
       <div className="fixed bottom-6 right-6">
         <button
-          onClick={() => setIsFormOpen(!isFormOpen)} // スイッチを切り替え
+          onClick={() => setIsFormOpen(!isFormOpen)}
           className={`flex h-12 w-12 items-center justify-center rounded-full text-2xl text-white shadow-lg hover:opacity-90 transition-all ${isFormOpen ? 'bg-slate-600 rotate-45' : 'bg-[#FD9D24]'}`}
         >
           +
