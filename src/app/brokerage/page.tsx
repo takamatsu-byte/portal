@@ -6,24 +6,20 @@ import Image from "next/image";
 
 type CostItem = {
   id: string;
-  label: string; // 項目（全角）
-  amount: string; // 金額（半角）
+  label: string;
+  amount: string;
 };
 
 type Property = {
   id: string;
   name: string;
-
   projectTotalYen: string;
   assumedRentYen: string;
   assumedYield: string;
-
   customerRentYen: string;
   surfaceYield: string;
-
   expectedSalePriceYen: string;
   propertyPriceYen: string;
-
   buyCostTotalYen: string;
   buyCostBreakdown?: { label: string; amount: string }[];
 };
@@ -172,7 +168,6 @@ export default function Page() {
     buyCostItems: ensureTrailingEmptyCostRow([{ id: uid(), label: "", amount: "" }]),
   });
 
-  // --- 修正箇所：型を string | null に指定して、他の文字列との比較を許可する ---
   const active: string = "収益物件一覧";
 
   function resetForm() {
@@ -298,7 +293,6 @@ export default function Page() {
     <div className="flex h-screen overflow-hidden font-sans text-slate-600 bg-slate-50">
       {/* 左サイドバー */}
       <aside className="w-64 text-white flex flex-col flex-shrink-0" style={{ backgroundColor: BRAND_ORANGE }}>
-        {/* サイド上部（ヘッダーと高さ合わせ） */}
         <div className="h-28 flex items-center px-6 border-b border-white/30 bg-white">
           <Image src="/logo.png" alt="PORTAL ロゴ" width={52} height={52} className="mr-4" priority />
           <span className="font-extrabold tracking-wide text-slate-800 text-2xl">PORTAL</span>
@@ -328,7 +322,6 @@ export default function Page() {
 
       {/* メイン */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        {/* ヘッダー白帯（太め） */}
         <div className="bg-white h-28 border-b border-slate-100 flex items-center">
           <header className="w-full px-8 flex items-center justify-end h-full">
             <div className="inline-flex items-center rounded-full border border-slate-200 bg-white shadow-sm overflow-hidden my-auto">
@@ -336,14 +329,11 @@ export default function Page() {
                 onClick={openCreate}
                 className="group px-4 h-11 inline-flex items-center gap-2 font-semibold text-slate-700 hover:text-white transition hover:bg-[#FD9D24]"
                 title="追加"
-                aria-label="追加"
               >
                 <span className="text-lg font-extrabold leading-none text-[#FD9D24] group-hover:text-white transition">+</span>
                 <span className="text-sm">追加</span>
               </button>
-
               <div className="w-px h-7 bg-slate-200" />
-
               <button
                 onClick={openEdit}
                 disabled={!selectedId}
@@ -352,13 +342,10 @@ export default function Page() {
                   selectedId ? "text-slate-700 hover:text-white hover:bg-[#FD9D24]" : "text-slate-300 cursor-not-allowed",
                 ].join(" ")}
                 title={selectedId ? "編集" : "行を選択してください"}
-                aria-label="編集"
               >
                 <span className="text-sm">編集</span>
               </button>
-
               <div className="w-px h-7 bg-slate-200" />
-
               <button
                 onClick={onDelete}
                 disabled={!selectedId}
@@ -367,7 +354,6 @@ export default function Page() {
                   selectedId ? "text-slate-700 hover:text-white hover:bg-[#FD9D24]" : "text-slate-300 cursor-not-allowed",
                 ].join(" ")}
                 title={selectedId ? "削除" : "行を選択してください"}
-                aria-label="削除"
               >
                 <span className="text-sm">削除</span>
               </button>
@@ -384,12 +370,18 @@ export default function Page() {
             </div>
           </div>
 
+          {/* テーブル外枠 */}
           <div className="bg-white rounded-xl border border-slate-100 overflow-hidden flex flex-col h-[calc(100%-88px)]">
-            <div className="flex-1 overflow-y-auto overflow-x-auto">
-              <table className="min-w-[1200px] w-full font-semibold text-center">
+            
+            {/* スクロールエリア 
+                snap-y snap-mandatory: 縦方向の吸い付きを有効にする
+            */}
+            <div className="flex-1 overflow-y-auto overflow-x-auto snap-y snap-mandatory scroll-smooth">
+              <table className="min-w-[1200px] w-full font-semibold text-center border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-100 text-sm text-slate-600 sticky top-0 z-10">
-                    <th className="px-6 py-4 text-left">物件名</th>
+                  {/* sticky top-0: ヘッダーを固定 */}
+                  <tr className="bg-slate-50 border-b border-slate-100 text-sm text-slate-600 sticky top-0 z-20">
+                    <th className="px-6 py-4 text-left sticky left-0 bg-slate-50 z-30">物件名</th>
                     <th className="px-4 py-4">プロジェクト総額</th>
                     <th className="px-4 py-4">想定家賃</th>
                     <th className="px-4 py-4">想定利回り</th>
@@ -402,30 +394,40 @@ export default function Page() {
                 </thead>
 
                 <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {properties.map((p) => {
+                  {properties.map((p, idx) => {
                     const hasBreakdown = !!(p.buyCostBreakdown && p.buyCostBreakdown.length > 0);
                     const isExpanded = !!expandedIds[p.id];
                     const isSelected = p.id === selectedId;
 
                     return (
                       <React.Fragment key={p.id}>
+                        {/* snap-start: スクロールが止まる位置を行の先頭に指定 
+                          hover:bg-slate-50: マウスオーバーで色変え
+                          idx % 2 === 0: 1行おきに薄いグレーを背景に敷く
+                        */}
                         <tr
-                          className={["hover:bg-slate-50", isSelected ? "bg-orange-50/60" : "", "cursor-pointer"].join(" ")}
+                          className={[
+                            "cursor-pointer snap-start transition-colors",
+                            isSelected ? "bg-orange-50/80" : idx % 2 === 0 ? "bg-white" : "bg-slate-50/30",
+                            "hover:bg-orange-50/40"
+                          ].join(" ")}
                           onClick={() => setSelectedId(p.id)}
                           onDoubleClick={() => openModalIfHasBreakdown(p)}
                         >
-                          <td className="px-6 py-4 whitespace-nowrap text-left">{p.name}</td>
-                          <td className="px-4 py-4 whitespace-nowrap">{p.projectTotalYen}</td>
-                          <td className="px-4 py-4 whitespace-nowrap">{p.assumedRentYen}</td>
-                          <td className="px-4 py-4 whitespace-nowrap text-green-600">{p.assumedYield}</td>
-                          <td className="px-4 py-4 whitespace-nowrap">{p.customerRentYen}</td>
-                          <td className="px-4 py-4 whitespace-nowrap">{p.surfaceYield}</td>
-                          <td className="px-4 py-4 whitespace-nowrap">{p.expectedSalePriceYen}</td>
-                          <td className="px-4 py-4 whitespace-nowrap">{p.propertyPriceYen}</td>
+                          {/* 物件名を左端に固定 (sticky left-0) */}
+                          <td className="px-6 py-5 whitespace-nowrap text-left sticky left-0 z-10 bg-inherit border-r border-slate-100/50">
+                            {p.name}
+                          </td>
+                          <td className="px-4 py-5 whitespace-nowrap">{p.projectTotalYen}</td>
+                          <td className="px-4 py-5 whitespace-nowrap">{p.assumedRentYen}</td>
+                          <td className="px-4 py-5 whitespace-nowrap text-green-600 font-bold">{p.assumedYield}</td>
+                          <td className="px-4 py-5 whitespace-nowrap">{p.customerRentYen}</td>
+                          <td className="px-4 py-5 whitespace-nowrap">{p.surfaceYield}</td>
+                          <td className="px-4 py-5 whitespace-nowrap">{p.expectedSalePriceYen}</td>
+                          <td className="px-4 py-5 whitespace-nowrap">{p.propertyPriceYen}</td>
 
-                          <td className="px-4 py-4 whitespace-nowrap relative">
+                          <td className="px-4 py-5 whitespace-nowrap relative">
                             {p.buyCostTotalYen}
-
                             {hasBreakdown && (
                               <button
                                 type="button"
@@ -433,17 +435,18 @@ export default function Page() {
                                   e.stopPropagation();
                                   toggleExpanded(p.id);
                                 }}
-                                className="absolute right-0 bottom-0 w-7 h-7"
-                                aria-label="買取経費の内訳を表示"
+                                className="absolute right-0 bottom-0 w-8 h-8 flex items-end justify-end p-1"
                                 title={isExpanded ? "内訳を閉じる" : "内訳を開く"}
                               >
                                 <span
-                                  className="absolute right-1 bottom-1 w-0 h-0"
+                                  className="w-0 h-0"
                                   style={{
                                     borderTop: "6px solid transparent",
                                     borderBottom: "6px solid transparent",
                                     borderLeft: `10px solid ${BRAND_ORANGE}`,
-                                    opacity: 0.95,
+                                    opacity: 0.9,
+                                    transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                                    transition: 'transform 0.2s'
                                   }}
                                 />
                               </button>
@@ -452,10 +455,11 @@ export default function Page() {
                         </tr>
 
                         {hasBreakdown && isExpanded && (
-                          <tr className="bg-white">
-                            <td colSpan={9} className="px-6 py-3">
-                              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                                <div className="text-sm text-slate-800 leading-relaxed break-words text-left font-semibold">
+                          <tr className="bg-slate-50/50 snap-none">
+                            <td colSpan={9} className="px-6 py-4">
+                              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                                <div className="text-sm text-slate-800 leading-relaxed text-left font-medium">
+                                  <span className="text-slate-400 mr-2">【内訳】</span>
                                   {oneLineBreakdown(p.buyCostBreakdown)}
                                 </div>
                               </div>
@@ -470,203 +474,173 @@ export default function Page() {
             </div>
           </div>
 
+          {/* 右サイドパネル (案件登録・編集) */}
           {isPanelOpen && (
             <div className="fixed inset-0 z-40">
-              <button className="absolute inset-0 bg-black/20" onClick={() => setIsPanelOpen(false)} aria-label="背景クリックで閉じる" />
-
-              <div className="absolute top-0 right-0 h-full w-[640px] max-w-[95vw] bg-white border-l border-slate-200 shadow-2xl">
-                <div className="h-full flex flex-col">
-                  <div className="h-20 flex items-center justify-between px-6 border-b border-slate-100 flex-shrink-0">
-                    <div className="font-bold text-slate-800">
-                      {mode === "edit" ? "案件編集" : "新規案件登録"}
-                      {mode === "edit" && selected?.name ? (
-                        <span className="ml-2 text-sm font-semibold text-slate-500">（{selected.name}）</span>
-                      ) : null}
-                    </div>
-                    <button
-                      onClick={() => setIsPanelOpen(false)}
-                      className="p-2 rounded-lg hover:bg-slate-100 text-slate-500"
-                      aria-label="閉じる"
-                    >
-                      ✕
-                    </button>
+              <button className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsPanelOpen(false)} />
+              <div className="absolute top-0 right-0 h-full w-[640px] max-w-[95vw] bg-white border-l border-slate-200 shadow-2xl flex flex-col">
+                <div className="h-20 flex items-center justify-between px-6 border-b border-slate-100 flex-shrink-0">
+                  <div className="font-bold text-slate-800 text-lg">
+                    {mode === "edit" ? "案件編集" : "新規案件登録"}
+                    {mode === "edit" && selected?.name && (
+                      <span className="ml-2 text-sm font-semibold text-slate-500">（{selected.name}）</span>
+                    )}
                   </div>
+                  <button onClick={() => setIsPanelOpen(false)} className="p-2 rounded-lg hover:bg-slate-100 text-slate-500">✕</button>
+                </div>
 
-                  <form onSubmit={upsertProperty} className="flex-1 overflow-auto p-6">
-                    <div className="space-y-4">
-                      <FieldZenkaku
-                        label="物件名（必須）"
-                        value={form.name}
-                        onChange={(v) => setForm((prev) => ({ ...prev, name: toZenkakuLoose(v) }))}
-                        placeholder="例）アキサスハイツ東京"
-                        required
-                      />
+                <form onSubmit={upsertProperty} className="flex-1 overflow-auto p-8">
+                  <div className="space-y-6">
+                    <FieldZenkaku
+                      label="物件名（必須）"
+                      value={form.name}
+                      onChange={(v) => setForm((prev) => ({ ...prev, name: toZenkakuLoose(v) }))}
+                      placeholder="例）アキサスハイツ東京"
+                      required
+                    />
 
-                      <FieldHankakuNumber
-                        label="物件価格（円）"
-                        value={form.propertyPriceYen}
-                        onChange={(v) => setForm((prev) => ({ ...prev, propertyPriceYen: toHankakuNumberOnly(v) }))}
-                        placeholder="例）78000000"
-                      />
+                    <FieldHankakuNumber
+                      label="物件価格（円）"
+                      value={form.propertyPriceYen}
+                      onChange={(v) => setForm((prev) => ({ ...prev, propertyPriceYen: toHankakuNumberOnly(v) }))}
+                      placeholder="例）78000000"
+                    />
 
-                      <div className="rounded-xl border border-slate-200 p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="text-sm font-semibold text-slate-800">買取経費（内訳）</div>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setForm((prev) => ({
-                                ...prev,
-                                buyCostItems: ensureTrailingEmptyCostRow([...prev.buyCostItems, { id: uid(), label: "", amount: "" }]),
-                              }))
-                            }
-                            className="group inline-flex items-center justify-center w-10 h-10 rounded-full border border-slate-200 bg-white font-semibold transition hover:bg-[#FD9D24]"
-                            aria-label="内訳を追加"
-                            title="内訳を追加"
-                          >
-                            <span className="text-xl font-extrabold text-[#FD9D24] group-hover:text-white transition">+</span>
-                          </button>
-                        </div>
-
-                        <div className="space-y-2">
-                          {form.buyCostItems.map((item, idx) => {
-                            const isLast = idx === form.buyCostItems.length - 1;
-                            const canDelete = !isLast;
-
-                            return (
-                              <div key={item.id} className="flex gap-2">
-                                <input
-                                  value={item.label}
-                                  onChange={(e) => {
-                                    const nextLabel = toZenkakuLoose(e.target.value);
-                                    setForm((prev) => {
-                                      const updated = prev.buyCostItems.map((x) => (x.id === item.id ? { ...x, label: nextLabel } : x));
-                                      return { ...prev, buyCostItems: ensureTrailingEmptyCostRow(updated) };
-                                    });
-                                  }}
-                                  placeholder="項目（例：仲介手数料）"
-                                  className="flex-1 rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-200"
-                                  inputMode="text"
-                                  lang="ja"
-                                />
-
-                                <input
-                                  value={item.amount}
-                                  onChange={(e) => {
-                                    const nextAmt = toHankakuNumberOnly(e.target.value);
-                                    setForm((prev) => {
-                                      const updated = prev.buyCostItems.map((x) => (x.id === item.id ? { ...x, amount: nextAmt } : x));
-                                      return { ...prev, buyCostItems: ensureTrailingEmptyCostRow(updated) };
-                                    });
-                                  }}
-                                  placeholder="金額（円）例：1200000"
-                                  className="w-44 rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-200"
-                                  inputMode="numeric"
-                                />
-
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (!canDelete) return;
-                                    setForm((prev) => {
-                                      const filtered = prev.buyCostItems.filter((x) => x.id !== item.id);
-                                      return { ...prev, buyCostItems: ensureTrailingEmptyCostRow(filtered) };
-                                    });
-                                  }}
-                                  disabled={!canDelete}
-                                  className={[
-                                    "w-10 rounded-xl border border-slate-200 text-slate-500",
-                                    canDelete ? "hover:bg-slate-50" : "opacity-30 cursor-not-allowed",
-                                  ].join(" ")}
-                                  aria-label={`内訳${idx + 1}を削除`}
-                                  title={canDelete ? "削除" : "空行は削除不可"}
-                                >
-                                  ×
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                        <div className="mt-3 flex items-center justify-between text-sm">
-                          <div className="text-slate-500">買取経費（合計）</div>
-                          <div className="font-semibold text-slate-800">{formatYen(sumCostItemsYen(form.buyCostItems))}</div>
-                        </div>
-                      </div>
-
-                      <FieldHankakuNumber
-                        label="想定家賃（円）"
-                        value={form.assumedRentYen}
-                        onChange={(v) => setForm((prev) => ({ ...prev, assumedRentYen: toHankakuNumberOnly(v) }))}
-                        placeholder="例）650000"
-                      />
-
-                      <FieldHankakuNumber
-                        label="客付け家賃（円）"
-                        value={form.customerRentYen}
-                        onChange={(v) => setForm((prev) => ({ ...prev, customerRentYen: toHankakuNumberOnly(v) }))}
-                        placeholder="例）620000"
-                      />
-
-                      <FieldHankakuNumber
-                        label="想定販売価格（円）"
-                        value={form.expectedSalePriceYen}
-                        onChange={(v) => setForm((prev) => ({ ...prev, expectedSalePriceYen: toHankakuNumberOnly(v) }))}
-                        placeholder="例）92000000"
-                      />
-
-                      <div className="mt-6 flex gap-3">
+                    <div className="rounded-2xl border border-slate-200 p-6 bg-slate-50/50">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="text-sm font-bold text-slate-800">買取経費（内訳）</div>
                         <button
                           type="button"
-                          onClick={() => {
-                            resetForm();
-                            closePanel();
-                          }}
-                          className="flex-1 rounded-xl border border-slate-200 px-4 py-3 font-semibold hover:bg-slate-50"
+                          onClick={() =>
+                            setForm((prev) => ({
+                              ...prev,
+                              buyCostItems: ensureTrailingEmptyCostRow([...prev.buyCostItems, { id: uid(), label: "", amount: "" }]),
+                            }))
+                          }
+                          className="w-10 h-10 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-[#FD9D24] hover:bg-[#FD9D24] hover:text-white transition-colors"
                         >
-                          キャンセル
-                        </button>
-                        <button
-                          type="submit"
-                          className="flex-1 rounded-xl px-4 py-3 font-semibold text-white"
-                          style={{ backgroundColor: BRAND_ORANGE }}
-                        >
-                          {mode === "edit" ? "更新" : "登録"}
+                          <span className="text-xl font-bold">+</span>
                         </button>
                       </div>
 
-                      <div className="h-4" />
+                      <div className="space-y-3">
+                        {form.buyCostItems.map((item, idx) => {
+                          const isLast = idx === form.buyCostItems.length - 1;
+                          const canDelete = !isLast;
+                          return (
+                            <div key={item.id} className="flex gap-2">
+                              <input
+                                value={item.label}
+                                onChange={(e) => {
+                                  const nextLabel = toZenkakuLoose(e.target.value);
+                                  setForm((prev) => {
+                                    const updated = prev.buyCostItems.map((x) => (x.id === item.id ? { ...x, label: nextLabel } : x));
+                                    return { ...prev, buyCostItems: ensureTrailingEmptyCostRow(updated) };
+                                  });
+                                }}
+                                placeholder="項目"
+                                className="flex-1 rounded-xl border border-slate-200 px-4 py-2 bg-white"
+                              />
+                              <input
+                                value={item.amount}
+                                onChange={(e) => {
+                                  const nextAmt = toHankakuNumberOnly(e.target.value);
+                                  setForm((prev) => {
+                                    const updated = prev.buyCostItems.map((x) => (x.id === item.id ? { ...x, amount: nextAmt } : x));
+                                    return { ...prev, buyCostItems: ensureTrailingEmptyCostRow(updated) };
+                                  });
+                                }}
+                                placeholder="金額"
+                                className="w-36 rounded-xl border border-slate-200 px-4 py-2 bg-white"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!canDelete) return;
+                                  setForm((prev) => {
+                                    const filtered = prev.buyCostItems.filter((x) => x.id !== item.id);
+                                    return { ...prev, buyCostItems: ensureTrailingEmptyCostRow(filtered) };
+                                  });
+                                }}
+                                disabled={!canDelete}
+                                className={`w-10 flex items-center justify-center text-slate-400 ${canDelete ? 'hover:text-red-500' : 'opacity-0 cursor-default'}`}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="mt-4 pt-4 border-t border-slate-200 flex items-center justify-between text-sm">
+                        <div className="text-slate-500 font-bold">合計</div>
+                        <div className="font-bold text-slate-800 text-base">{formatYen(sumCostItemsYen(form.buyCostItems))}</div>
+                      </div>
                     </div>
-                  </form>
-                </div>
+
+                    <FieldHankakuNumber
+                      label="想定家賃（円）"
+                      value={form.assumedRentYen}
+                      onChange={(v) => setForm((prev) => ({ ...prev, assumedRentYen: toHankakuNumberOnly(v) }))}
+                      placeholder="例）650000"
+                    />
+
+                    <FieldHankakuNumber
+                      label="客付け家賃（円）"
+                      value={form.customerRentYen}
+                      onChange={(v) => setForm((prev) => ({ ...prev, customerRentYen: toHankakuNumberOnly(v) }))}
+                      placeholder="例）620000"
+                    />
+
+                    <FieldHankakuNumber
+                      label="想定販売価格（円）"
+                      value={form.expectedSalePriceYen}
+                      onChange={(v) => setForm((prev) => ({ ...prev, expectedSalePriceYen: toHankakuNumberOnly(v) }))}
+                      placeholder="例）92000000"
+                    />
+
+                    <div className="pt-4 flex gap-4 sticky bottom-0 bg-white">
+                      <button
+                        type="button"
+                        onClick={() => { resetForm(); closePanel(); }}
+                        className="flex-1 rounded-xl border border-slate-200 px-4 py-4 font-bold hover:bg-slate-50 transition-colors"
+                      >
+                        キャンセル
+                      </button>
+                      <button
+                        type="submit"
+                        className="flex-1 rounded-xl px-4 py-4 font-bold text-white shadow-lg shadow-orange-200 transition-transform active:scale-[0.98]"
+                        style={{ backgroundColor: BRAND_ORANGE }}
+                      >
+                        {mode === "edit" ? "更新する" : "登録する"}
+                      </button>
+                    </div>
+                  </div>
+                </form>
               </div>
             </div>
           )}
 
+          {/* 内訳モーダル */}
           {modalTarget && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center">
-              <button className="absolute inset-0 bg-black/30" onClick={() => setModalTarget(null)} aria-label="閉じる" />
-              <div className="relative w-[780px] max-w-[95vw] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
-                <div className="h-16 px-6 flex items-center justify-between border-b border-slate-100">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <button className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setModalTarget(null)} />
+              <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div className="h-16 px-8 flex items-center justify-between border-b border-slate-100">
                   <div className="font-bold text-slate-800">買取経費 内訳：{modalTarget.name}</div>
-                  <button onClick={() => setModalTarget(null)} className="p-2 rounded-lg hover:bg-slate-100 text-slate-500" aria-label="閉じる">
-                    ✕
-                  </button>
+                  <button onClick={() => setModalTarget(null)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">✕</button>
                 </div>
-
-                <div className="p-6">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="text-sm text-slate-800 leading-relaxed break-words">{oneLineBreakdown(modalTarget.buyCostBreakdown)}</div>
+                <div className="p-8">
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-6">
+                    <div className="text-base text-slate-800 leading-relaxed font-medium">
+                      {oneLineBreakdown(modalTarget.buyCostBreakdown)}
+                    </div>
                   </div>
-
-                  <div className="mt-4 pt-4 border-t border-slate-200 flex items-center justify-between text-sm">
-                    <div className="text-slate-500">買取経費（合計）</div>
-                    <div className="font-semibold text-slate-800">{modalTarget.buyCostTotalYen}</div>
+                  <div className="mt-6 flex items-center justify-between">
+                    <div className="text-slate-500 font-bold">合計金額</div>
+                    <div className="font-bold text-slate-800 text-2xl">{modalTarget.buyCostTotalYen}</div>
                   </div>
-                </div>
-
-                <div className="px-6 pb-6">
-                  <button onClick={() => setModalTarget(null)} className="w-full rounded-xl border border-slate-200 px-4 py-3 font-semibold hover:bg-slate-50">
+                  <button onClick={() => setModalTarget(null)} className="mt-8 w-full rounded-2xl bg-slate-800 text-white px-4 py-4 font-bold hover:bg-slate-700 transition-colors">
                     閉じる
                   </button>
                 </div>
@@ -688,15 +662,13 @@ function FieldZenkaku(props: {
 }) {
   return (
     <label className="block">
-      <div className="text-sm font-semibold text-slate-700 mb-1">{props.label}</div>
+      <div className="text-sm font-bold text-slate-700 mb-2 ml-1">{props.label}</div>
       <input
         value={props.value}
         onChange={(e) => props.onChange(e.target.value)}
         placeholder={props.placeholder}
         required={props.required}
-        inputMode="text"
-        lang="ja"
-        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-slate-200"
+        className="w-full rounded-xl border border-slate-200 px-5 py-4 outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all bg-white"
       />
     </label>
   );
@@ -711,14 +683,14 @@ function FieldHankakuNumber(props: {
 }) {
   return (
     <label className="block">
-      <div className="text-sm font-semibold text-slate-700 mb-1">{props.label}</div>
+      <div className="text-sm font-bold text-slate-700 mb-2 ml-1">{props.label}</div>
       <input
         value={props.value}
         onChange={(e) => props.onChange(e.target.value)}
         placeholder={props.placeholder}
         required={props.required}
         inputMode="numeric"
-        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-slate-200"
+        className="w-full rounded-xl border border-slate-200 px-5 py-4 outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all bg-white"
       />
     </label>
   );
