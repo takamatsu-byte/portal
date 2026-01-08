@@ -146,7 +146,6 @@ export default function Page() {
   const [properties, setProperties] = useState<Property[]>(initial);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
-  const [modalTarget, setModalTarget] = useState<Property | null>(null);
 
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [mode, setMode] = useState<"create" | "edit">("create");
@@ -231,10 +230,6 @@ export default function Page() {
 
   function toggleExpanded(id: string) {
     setExpandedIds((prev) => ({ ...prev, [id]: !prev[id] }));
-  }
-
-  function openModalIfHasBreakdown(p: Property) {
-    if (p.buyCostBreakdown && p.buyCostBreakdown.length > 0) setModalTarget(p);
   }
 
   function upsertProperty(e: React.FormEvent) {
@@ -325,36 +320,16 @@ export default function Page() {
         <div className="bg-white h-28 border-b border-slate-100 flex items-center">
           <header className="w-full px-8 flex items-center justify-end h-full">
             <div className="inline-flex items-center rounded-full border border-slate-200 bg-white shadow-sm overflow-hidden my-auto">
-              <button
-                onClick={openCreate}
-                className="group px-4 h-11 inline-flex items-center gap-2 font-semibold text-slate-700 hover:text-white transition hover:bg-[#FD9D24]"
-                title="追加"
-              >
+              <button onClick={openCreate} className="group px-4 h-11 inline-flex items-center gap-2 font-semibold text-slate-700 hover:text-white transition hover:bg-[#FD9D24]" title="追加">
                 <span className="text-lg font-extrabold leading-none text-[#FD9D24] group-hover:text-white transition">+</span>
                 <span className="text-sm">追加</span>
               </button>
               <div className="w-px h-7 bg-slate-200" />
-              <button
-                onClick={openEdit}
-                disabled={!selectedId}
-                className={[
-                  "px-4 h-11 inline-flex items-center gap-2 font-semibold transition",
-                  selectedId ? "text-slate-700 hover:text-white hover:bg-[#FD9D24]" : "text-slate-300 cursor-not-allowed",
-                ].join(" ")}
-                title={selectedId ? "編集" : "行を選択してください"}
-              >
+              <button onClick={openEdit} disabled={!selectedId} className={["px-4 h-11 inline-flex items-center gap-2 font-semibold transition", selectedId ? "text-slate-700 hover:text-white hover:bg-[#FD9D24]" : "text-slate-300 cursor-not-allowed"].join(" ")} title={selectedId ? "編集" : "行を選択してください"}>
                 <span className="text-sm">編集</span>
               </button>
               <div className="w-px h-7 bg-slate-200" />
-              <button
-                onClick={onDelete}
-                disabled={!selectedId}
-                className={[
-                  "px-4 h-11 inline-flex items-center gap-2 font-semibold transition",
-                  selectedId ? "text-slate-700 hover:text-white hover:bg-[#FD9D24]" : "text-slate-300 cursor-not-allowed",
-                ].join(" ")}
-                title={selectedId ? "削除" : "行を選択してください"}
-              >
+              <button onClick={onDelete} disabled={!selectedId} className={["px-4 h-11 inline-flex items-center gap-2 font-semibold transition", selectedId ? "text-slate-700 hover:text-white hover:bg-[#FD9D24]" : "text-slate-300 cursor-not-allowed"].join(" ")} title={selectedId ? "削除" : "行を選択してください"}>
                 <span className="text-sm">削除</span>
               </button>
             </div>
@@ -370,16 +345,10 @@ export default function Page() {
             </div>
           </div>
 
-          {/* テーブル外枠 */}
           <div className="bg-white rounded-xl border border-slate-100 overflow-hidden flex flex-col h-[calc(100%-88px)]">
-            
-            {/* スクロールエリア 
-                snap-y snap-mandatory: 縦方向の吸い付きを有効にする
-            */}
             <div className="flex-1 overflow-y-auto overflow-x-auto snap-y snap-mandatory scroll-smooth">
               <table className="min-w-[1200px] w-full font-semibold text-center border-collapse">
                 <thead>
-                  {/* sticky top-0: ヘッダーを固定 */}
                   <tr className="bg-slate-50 border-b border-slate-100 text-sm text-slate-600 sticky top-0 z-20">
                     <th className="px-6 py-4 text-left sticky left-0 bg-slate-50 z-30">物件名</th>
                     <th className="px-4 py-4">プロジェクト総額</th>
@@ -401,10 +370,6 @@ export default function Page() {
 
                     return (
                       <React.Fragment key={p.id}>
-                        {/* snap-start: スクロールが止まる位置を行の先頭に指定 
-                          hover:bg-slate-50: マウスオーバーで色変え
-                          idx % 2 === 0: 1行おきに薄いグレーを背景に敷く
-                        */}
                         <tr
                           className={[
                             "cursor-pointer snap-start transition-colors",
@@ -412,9 +377,7 @@ export default function Page() {
                             "hover:bg-orange-50/40"
                           ].join(" ")}
                           onClick={() => setSelectedId(p.id)}
-                          onDoubleClick={() => openModalIfHasBreakdown(p)}
                         >
-                          {/* 物件名を左端に固定 (sticky left-0) */}
                           <td className="px-6 py-5 whitespace-nowrap text-left sticky left-0 z-10 bg-inherit border-r border-slate-100/50">
                             {p.name}
                           </td>
@@ -426,31 +389,22 @@ export default function Page() {
                           <td className="px-4 py-5 whitespace-nowrap">{p.expectedSalePriceYen}</td>
                           <td className="px-4 py-5 whitespace-nowrap">{p.propertyPriceYen}</td>
 
-                          <td className="px-4 py-5 whitespace-nowrap relative">
-                            {p.buyCostTotalYen}
-                            {hasBreakdown && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleExpanded(p.id);
-                                }}
-                                className="absolute right-0 bottom-0 w-8 h-8 flex items-end justify-end p-1"
-                                title={isExpanded ? "内訳を閉じる" : "内訳を開く"}
-                              >
-                                <span
-                                  className="w-0 h-0"
-                                  style={{
-                                    borderTop: "6px solid transparent",
-                                    borderBottom: "6px solid transparent",
-                                    borderLeft: `10px solid ${BRAND_ORANGE}`,
-                                    opacity: 0.9,
-                                    transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                                    transition: 'transform 0.2s'
+                          <td className="px-4 py-5 whitespace-nowrap">
+                            <div className="flex flex-col items-center gap-1">
+                              <span>{p.buyCostTotalYen}</span>
+                              {hasBreakdown && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleExpanded(p.id);
                                   }}
-                                />
-                              </button>
-                            )}
+                                  className="text-[10px] text-[#FD9D24] hover:underline font-bold"
+                                >
+                                  {isExpanded ? "内訳を閉じる" : "経費内訳を表示"}
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
 
@@ -474,7 +428,7 @@ export default function Page() {
             </div>
           </div>
 
-          {/* 右サイドパネル (案件登録・編集) */}
+          {/* 右サイドパネル */}
           {isPanelOpen && (
             <div className="fixed inset-0 z-40">
               <button className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsPanelOpen(false)} />
@@ -491,159 +445,42 @@ export default function Page() {
 
                 <form onSubmit={upsertProperty} className="flex-1 overflow-auto p-8">
                   <div className="space-y-6">
-                    <FieldZenkaku
-                      label="物件名（必須）"
-                      value={form.name}
-                      onChange={(v) => setForm((prev) => ({ ...prev, name: toZenkakuLoose(v) }))}
-                      placeholder="例）アキサスハイツ東京"
-                      required
-                    />
-
-                    <FieldHankakuNumber
-                      label="物件価格（円）"
-                      value={form.propertyPriceYen}
-                      onChange={(v) => setForm((prev) => ({ ...prev, propertyPriceYen: toHankakuNumberOnly(v) }))}
-                      placeholder="例）78000000"
-                    />
-
+                    <FieldZenkaku label="物件名（必須）" value={form.name} onChange={(v) => setForm((prev) => ({ ...prev, name: toZenkakuLoose(v) }))} placeholder="例）アキサスハイツ東京" required />
+                    <FieldHankakuNumber label="物件価格（円）" value={form.propertyPriceYen} onChange={(v) => setForm((prev) => ({ ...prev, propertyPriceYen: toHankakuNumberOnly(v) }))} placeholder="例）78000000" />
                     <div className="rounded-2xl border border-slate-200 p-6 bg-slate-50/50">
                       <div className="flex items-center justify-between mb-4">
                         <div className="text-sm font-bold text-slate-800">買取経費（内訳）</div>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setForm((prev) => ({
-                              ...prev,
-                              buyCostItems: ensureTrailingEmptyCostRow([...prev.buyCostItems, { id: uid(), label: "", amount: "" }]),
-                            }))
-                          }
-                          className="w-10 h-10 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-[#FD9D24] hover:bg-[#FD9D24] hover:text-white transition-colors"
-                        >
+                        <button type="button" onClick={() => setForm((prev) => ({ ...prev, buyCostItems: ensureTrailingEmptyCostRow([...prev.buyCostItems, { id: uid(), label: "", amount: "" }]), }))} className="w-10 h-10 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-[#FD9D24] hover:bg-[#FD9D24] hover:text-white transition-colors">
                           <span className="text-xl font-bold">+</span>
                         </button>
                       </div>
-
                       <div className="space-y-3">
                         {form.buyCostItems.map((item, idx) => {
                           const isLast = idx === form.buyCostItems.length - 1;
                           const canDelete = !isLast;
                           return (
                             <div key={item.id} className="flex gap-2">
-                              <input
-                                value={item.label}
-                                onChange={(e) => {
-                                  const nextLabel = toZenkakuLoose(e.target.value);
-                                  setForm((prev) => {
-                                    const updated = prev.buyCostItems.map((x) => (x.id === item.id ? { ...x, label: nextLabel } : x));
-                                    return { ...prev, buyCostItems: ensureTrailingEmptyCostRow(updated) };
-                                  });
-                                }}
-                                placeholder="項目"
-                                className="flex-1 rounded-xl border border-slate-200 px-4 py-2 bg-white"
-                              />
-                              <input
-                                value={item.amount}
-                                onChange={(e) => {
-                                  const nextAmt = toHankakuNumberOnly(e.target.value);
-                                  setForm((prev) => {
-                                    const updated = prev.buyCostItems.map((x) => (x.id === item.id ? { ...x, amount: nextAmt } : x));
-                                    return { ...prev, buyCostItems: ensureTrailingEmptyCostRow(updated) };
-                                  });
-                                }}
-                                placeholder="金額"
-                                className="w-36 rounded-xl border border-slate-200 px-4 py-2 bg-white"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (!canDelete) return;
-                                  setForm((prev) => {
-                                    const filtered = prev.buyCostItems.filter((x) => x.id !== item.id);
-                                    return { ...prev, buyCostItems: ensureTrailingEmptyCostRow(filtered) };
-                                  });
-                                }}
-                                disabled={!canDelete}
-                                className={`w-10 flex items-center justify-center text-slate-400 ${canDelete ? 'hover:text-red-500' : 'opacity-0 cursor-default'}`}
-                              >
-                                ✕
-                              </button>
+                              <input value={item.label} onChange={(e) => { const nextLabel = toZenkakuLoose(e.target.value); setForm((prev) => { const updated = prev.buyCostItems.map((x) => (x.id === item.id ? { ...x, label: nextLabel } : x)); return { ...prev, buyCostItems: ensureTrailingEmptyCostRow(updated) }; }); }} placeholder="項目" className="flex-1 rounded-xl border border-slate-200 px-4 py-2 bg-white" />
+                              <input value={item.amount} onChange={(e) => { const nextAmt = toHankakuNumberOnly(e.target.value); setForm((prev) => { const updated = prev.buyCostItems.map((x) => (x.id === item.id ? { ...x, amount: nextAmt } : x)); return { ...prev, buyCostItems: ensureTrailingEmptyCostRow(updated) }; }); }} placeholder="金額" className="w-36 rounded-xl border border-slate-200 px-4 py-2 bg-white" />
+                              <button type="button" onClick={() => { if (!canDelete) return; setForm((prev) => { const filtered = prev.buyCostItems.filter((x) => x.id !== item.id); return { ...prev, buyCostItems: ensureTrailingEmptyCostRow(filtered) }; }); }} disabled={!canDelete} className={`w-10 flex items-center justify-center text-slate-400 ${canDelete ? 'hover:text-red-500' : 'opacity-0 cursor-default'}`}>✕</button>
                             </div>
                           );
                         })}
                       </div>
-
                       <div className="mt-4 pt-4 border-t border-slate-200 flex items-center justify-between text-sm">
                         <div className="text-slate-500 font-bold">合計</div>
                         <div className="font-bold text-slate-800 text-base">{formatYen(sumCostItemsYen(form.buyCostItems))}</div>
                       </div>
                     </div>
-
-                    <FieldHankakuNumber
-                      label="想定家賃（円）"
-                      value={form.assumedRentYen}
-                      onChange={(v) => setForm((prev) => ({ ...prev, assumedRentYen: toHankakuNumberOnly(v) }))}
-                      placeholder="例）650000"
-                    />
-
-                    <FieldHankakuNumber
-                      label="客付け家賃（円）"
-                      value={form.customerRentYen}
-                      onChange={(v) => setForm((prev) => ({ ...prev, customerRentYen: toHankakuNumberOnly(v) }))}
-                      placeholder="例）620000"
-                    />
-
-                    <FieldHankakuNumber
-                      label="想定販売価格（円）"
-                      value={form.expectedSalePriceYen}
-                      onChange={(v) => setForm((prev) => ({ ...prev, expectedSalePriceYen: toHankakuNumberOnly(v) }))}
-                      placeholder="例）92000000"
-                    />
-
+                    <FieldHankakuNumber label="想定家賃（円）" value={form.assumedRentYen} onChange={(v) => setForm((prev) => ({ ...prev, assumedRentYen: toHankakuNumberOnly(v) }))} placeholder="例）650000" />
+                    <FieldHankakuNumber label="客付け家賃（円）" value={form.customerRentYen} onChange={(v) => setForm((prev) => ({ ...prev, customerRentYen: toHankakuNumberOnly(v) }))} placeholder="例）620000" />
+                    <FieldHankakuNumber label="想定販売価格（円）" value={form.expectedSalePriceYen} onChange={(v) => setForm((prev) => ({ ...prev, expectedSalePriceYen: toHankakuNumberOnly(v) }))} placeholder="例）92000000" />
                     <div className="pt-4 flex gap-4 sticky bottom-0 bg-white">
-                      <button
-                        type="button"
-                        onClick={() => { resetForm(); closePanel(); }}
-                        className="flex-1 rounded-xl border border-slate-200 px-4 py-4 font-bold hover:bg-slate-50 transition-colors"
-                      >
-                        キャンセル
-                      </button>
-                      <button
-                        type="submit"
-                        className="flex-1 rounded-xl px-4 py-4 font-bold text-white shadow-lg shadow-orange-200 transition-transform active:scale-[0.98]"
-                        style={{ backgroundColor: BRAND_ORANGE }}
-                      >
-                        {mode === "edit" ? "更新する" : "登録する"}
-                      </button>
+                      <button type="button" onClick={() => { resetForm(); closePanel(); }} className="flex-1 rounded-xl border border-slate-200 px-4 py-4 font-bold hover:bg-slate-50 transition-colors">キャンセル</button>
+                      <button type="submit" className="flex-1 rounded-xl px-4 py-4 font-bold text-white shadow-lg shadow-orange-200 transition-transform active:scale-[0.98]" style={{ backgroundColor: BRAND_ORANGE }}>{mode === "edit" ? "更新する" : "登録する"}</button>
                     </div>
                   </div>
                 </form>
-              </div>
-            </div>
-          )}
-
-          {/* 内訳モーダル */}
-          {modalTarget && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <button className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setModalTarget(null)} />
-              <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-                <div className="h-16 px-8 flex items-center justify-between border-b border-slate-100">
-                  <div className="font-bold text-slate-800">買取経費 内訳：{modalTarget.name}</div>
-                  <button onClick={() => setModalTarget(null)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">✕</button>
-                </div>
-                <div className="p-8">
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-6">
-                    <div className="text-base text-slate-800 leading-relaxed font-medium">
-                      {oneLineBreakdown(modalTarget.buyCostBreakdown)}
-                    </div>
-                  </div>
-                  <div className="mt-6 flex items-center justify-between">
-                    <div className="text-slate-500 font-bold">合計金額</div>
-                    <div className="font-bold text-slate-800 text-2xl">{modalTarget.buyCostTotalYen}</div>
-                  </div>
-                  <button onClick={() => setModalTarget(null)} className="mt-8 w-full rounded-2xl bg-slate-800 text-white px-4 py-4 font-bold hover:bg-slate-700 transition-colors">
-                    閉じる
-                  </button>
-                </div>
               </div>
             </div>
           )}
@@ -653,45 +490,20 @@ export default function Page() {
   );
 }
 
-function FieldZenkaku(props: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  required?: boolean;
-}) {
+function FieldZenkaku(props: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; required?: boolean; }) {
   return (
     <label className="block">
       <div className="text-sm font-bold text-slate-700 mb-2 ml-1">{props.label}</div>
-      <input
-        value={props.value}
-        onChange={(e) => props.onChange(e.target.value)}
-        placeholder={props.placeholder}
-        required={props.required}
-        className="w-full rounded-xl border border-slate-200 px-5 py-4 outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all bg-white"
-      />
+      <input value={props.value} onChange={(e) => props.onChange(e.target.value)} placeholder={props.placeholder} required={props.required} className="w-full rounded-xl border border-slate-200 px-5 py-4 outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all bg-white" />
     </label>
   );
 }
 
-function FieldHankakuNumber(props: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  required?: boolean;
-}) {
+function FieldHankakuNumber(props: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; required?: boolean; }) {
   return (
     <label className="block">
       <div className="text-sm font-bold text-slate-700 mb-2 ml-1">{props.label}</div>
-      <input
-        value={props.value}
-        onChange={(e) => props.onChange(e.target.value)}
-        placeholder={props.placeholder}
-        required={props.required}
-        inputMode="numeric"
-        className="w-full rounded-xl border border-slate-200 px-5 py-4 outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all bg-white"
-      />
+      <input value={props.value} onChange={(e) => props.onChange(e.target.value)} placeholder={props.placeholder} required={props.required} inputMode="numeric" className="w-full rounded-xl border border-slate-200 px-5 py-4 outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all bg-white" />
     </label>
   );
 }
