@@ -1,39 +1,84 @@
-// src/app/api/projects/route.ts
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-
-export async function GET() {
-  try {
-    const projects = await prisma.project.findMany({
-      orderBy: { createdAt: "desc" },
-    });
-    return NextResponse.json(projects);
-  } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: "Failed to fetch projects" }, { status: 500 });
-  }
+// クライアントの生成設定（そのまま）
+generator client {
+  provider = "prisma-client-js"
 }
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
+// データベース接続設定（そのまま）
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
 
-    // ここはあなたの Prisma schema に合わせて調整してください
-    // 例: Projectモデルに name がある想定
-    const name = String(body?.name ?? "").trim();
-    if (!name) {
-      return NextResponse.json({ error: "name is required" }, { status: 400 });
-    }
+// ▼ ここから下を貼り付けてください ▼
 
-    const created = await prisma.project.create({
-      data: {
-        name,
-      },
-    });
+// 1. 収益物件データの設計図
+model Project {
+  id                String   @id @default(cuid())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  code              String
+  propertyAddress   String
+  
+  projectTotal      Int?
+  expectedRent      Int?
+  expectedYieldBp   Int?
+  agentRent         Int?
+  surfaceYieldBp    Int?
+  expectedSalePrice Int?
+  propertyPrice     Int?
+  
+  acquisitionCost   Int?
+  
+  expenses          ExpenseItem[]
+}
 
-    return NextResponse.json(created, { status: 201 });
-  } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: "Failed to create project" }, { status: 500 });
-  }
+// 収益物件の経費内訳
+model ExpenseItem {
+  id        String  @id @default(cuid())
+  name      String
+  price     Int
+  
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+}
+
+
+// 2. 仲介・紹介案件データの設計図
+model BrokerageProject {
+  id                String   @id @default(cuid())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  code              String
+  propertyAddress   String
+  
+  // ★追加した新しい項目（売上・日付）
+  sales             Int?
+  contractDate      String?
+  settlementDate    String?
+  
+  acquisitionCost   Int?
+  
+  // エラー防止のため古い項目も定義だけ残しておく
+  projectTotal      Int?
+  expectedRent      Int?
+  expectedYieldBp   Int?
+  agentRent         Int?
+  surfaceYieldBp    Int?
+  expectedSalePrice Int?
+  propertyPrice     Int?
+
+  expenses          BrokerageExpenseItem[]
+}
+
+// 仲介・紹介案件の経費内訳
+model BrokerageExpenseItem {
+  id        String  @id @default(cuid())
+  name      String
+  price     Int
+  
+  project   BrokerageProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
 }
