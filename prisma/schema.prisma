@@ -82,3 +82,29 @@ model BrokerageExpenseItem {
   project   BrokerageProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
   projectId String
 }
+// 3. 転売案件データの設計図
+model ResaleProject {
+  id                String   @id @default(cuid())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  code              String
+  propertyAddress   String   @default("-")
+  
+  propertyPrice     Int?     // 物件価格
+  acquisitionCost   Int?     // 買取経費
+  projectTotal      Int?     // 総額
+  expectedSalePrice Int?     // 想定販売価格
+
+  expenses          ResaleExpenseItem[]
+}
+
+// 転売案件の経費内訳
+model ResaleExpenseItem {
+  id        String        @id @default(cuid())
+  name      String
+  price     Int
+  
+  project   ResaleProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+}
