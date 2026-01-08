@@ -1,11 +1,32 @@
-// prisma/schema.prisma
-
-datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")      // 1-①の変数
-  directUrl = env("DIRECT_URL")        // 1-②の変数
-}
-
+// クライアントの生成設定
 generator client {
   provider = "prisma-client-js"
+}
+
+// データベース接続設定
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ここが足りていませんでした！↓
+// 案件データの設計図（モデル）
+model Project {
+  id                String   @id @default(cuid())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  code              String   // 物件コード
+  propertyAddress   String   // 物件所在地
+  
+  // 数値項目（?がついているのは空欄OKという意味です）
+  projectTotal      Int?     // プロジェクト総額
+  expectedRent      Int?     // 想定家賃
+  expectedYieldBp   Int?     // 想定利回り
+  agentRent         Int?     // 客付け家賃
+  surfaceYieldBp    Int?     // 表面利回り
+  expectedSalePrice Int?     // 想定販売価格
+  propertyPrice     Int?     // 物件価格
+  acquisitionCost   Int?     // 買取経費
 }
