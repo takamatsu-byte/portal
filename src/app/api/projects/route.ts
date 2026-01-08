@@ -3,30 +3,35 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// 1. 物件を削除するAPI (すでにあるもの)
+// 1. 物件を削除するAPI
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // Promise型に変更
 ) {
   try {
-    const { id } = params;
-    await prisma.project.delete({ where: { id: id } });
+    const { id } = await params; // awaitで受け取るように変更
+
+    await prisma.project.delete({
+      where: { id: id },
+    });
+
     return NextResponse.json({ message: "削除成功" });
   } catch (error) {
+    console.error("削除エラー:", error);
     return NextResponse.json({ error: "削除失敗" }, { status: 500 });
   }
 }
 
-// 2. 物件を更新するAPI (新規追加)
+// 2. 物件を更新するAPI
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // Promise型に変更
 ) {
   try {
-    const { id } = params;
+    const { id } = await params; // awaitで受け取るように変更
     const json = await request.json();
 
-    // 一旦今の経費(expenses)をすべて消して作り直すのが最も確実な更新方法です
+    // 関連する経費(expenses)を一旦すべて消してから作り直す
     await prisma.expenseItem.deleteMany({ where: { projectId: id } });
 
     const updated = await prisma.project.update({
