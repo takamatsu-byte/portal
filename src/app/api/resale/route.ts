@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 export async function GET() {
   try {
-    const projects = await prisma.resaleProject.findMany({
+    const projects = await prisma.brokerageProject.findMany({
       include: { expenses: true },
       orderBy: { createdAt: "desc" },
     });
@@ -18,13 +18,12 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const json = await request.json();
-    const project = await prisma.resaleProject.create({
+    const project = await prisma.brokerageProject.create({
       data: {
         code: json.name,
-        propertyPrice: json.propertyPrice,
+        propertyAddress: "仲介",
+        sales: json.expectedSalePrice,
         acquisitionCost: json.acquisitionCost,
-        projectTotal: json.projectTotal,
-        expectedSalePrice: json.expectedSalePrice,
         expenses: {
           create: json.expenses.map((e: any) => ({
             name: e.label,
