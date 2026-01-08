@@ -1,40 +1,28 @@
-import Link from "next/link";
-import Image from "next/image"; // 画像表示用の部品をインポート
+import Image from "next/image";
 import { prisma } from "@/app/lib/prisma";
-
-function yen(n: number | null | undefined) {
-  if (n === null || n === undefined) return "—";
-  return `${n.toLocaleString("ja-JP")} 円`;
-}
-
-function pctFromBp(bp: number | null | undefined) {
-  if (bp === null || bp === undefined) return "—";
-  return `${(bp / 100).toFixed(2)}%`;
-}
+import ProjectDashboard from "@/app/components/ProjectDashboard"; // さっき作った部品を読み込み
 
 export default async function Page() {
+  // サーバー側でデータを取得
   const projects = await prisma.project.findMany({
     orderBy: { createdAt: "desc" }
   });
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* ヘッダー：オレンジ色（#FD9D24） */}
+      {/* ヘッダー */}
       <header className="bg-[#FD9D24]">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          
-          {/* ロゴ部分：テキストから画像に変更し、背景を白に設定 */}
           <div className="rounded bg-white p-2 shadow-sm">
             <Image
-              src="/logo.png" // publicフォルダに入れた画像ファイル名
+              src="/logo.png"
               alt="株式会社アキサス"
-              width={200} // 画像の幅（適宜調整してください）
-              height={50} // 画像の高さ（適宜調整してください）
-              className="h-auto w-auto object-contain" // アスペクト比を維持してきれいに表示
-              priority // 重要な画像なので優先的に読み込む
+              width={200}
+              height={50}
+              className="h-auto w-auto object-contain"
+              priority
             />
           </div>
-
           <div className="flex items-center gap-3 text-white">
             <span className="text-sm">〇〇様</span>
             <div className="h-8 w-8 rounded-full bg-white/30" />
@@ -66,109 +54,10 @@ export default async function Page() {
             </div>
           </aside>
 
-          {/* 右コンテンツ */}
+          {/* 右コンテンツ：動的な部品に任せる */}
           <section className="col-span-12 md:col-span-9">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h1 className="text-xl font-bold text-slate-800">案件情報</h1>
-                <p className="mt-1 text-sm text-slate-500">
-                  DBの案件データを表示中（全{projects.length}件）
-                </p>
-              </div>
-
-              <button className="rounded-md border bg-white px-4 py-2 text-sm">
-                編集パネル
-              </button>
-            </div>
-
-            <div className="rounded-lg border bg-white">
-              <div className="flex items-center justify-between border-b px-4 py-3">
-                <div className="font-semibold">案件一覧</div>
-                <div className="text-sm text-slate-500">
-                  件数：{projects.length}
-                </div>
-              </div>
-
-              <div className="divide-y">
-                {projects.length === 0 && (
-                  <div className="p-8 text-center text-slate-500">
-                    まだ案件がありません。右下の「＋」から登録してください。
-                  </div>
-                )}
-                {projects.map((p) => (
-                  <div key={p.id} className="p-4">
-                    <div className="mb-2 flex items-start justify-between gap-3">
-                      <div className="text-sm text-slate-600">
-                        <span className="font-semibold text-slate-700">
-                          物件所在地：
-                        </span>{" "}
-                        {p.propertyAddress}
-                      </div>
-
-                      <Link
-                        href="#"
-                        className="rounded-md border px-3 py-1 text-sm"
-                      >
-                        編集
-                      </Link>
-                    </div>
-
-                    <div className="overflow-x-auto rounded-lg border">
-                      <table className="min-w-[900px] w-full text-sm">
-                        <thead className="bg-slate-50 text-slate-600">
-                          <tr className="border-b">
-                            <th className="px-3 py-2 text-left">プロジェクト総額</th>
-                            <th className="px-3 py-2 text-left">想定家賃</th>
-                            <th className="px-3 py-2 text-left">想定利回り</th>
-                            <th className="px-3 py-2 text-left">客付け家賃</th>
-                            <th className="px-3 py-2 text-left">表面利回り</th>
-                            <th className="px-3 py-2 text-left">想定販売価格</th>
-                            <th className="px-3 py-2 text-left">物件価格</th>
-                            <th className="px-3 py-2 text-left">買取経費</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr className="bg-white">
-                            <td className="px-3 py-3">{yen(p.projectTotal)}</td>
-                            <td className="px-3 py-3">{yen(p.expectedRent)}</td>
-                            <td className="px-3 py-3">
-                              {pctFromBp(p.expectedYieldBp)}
-                            </td>
-                            <td className="px-3 py-3">{yen(p.agentRent)}</td>
-                            <td className="px-3 py-3">
-                              {pctFromBp(p.surfaceYieldBp)}
-                            </td>
-                            <td className="px-3 py-3">
-                              {yen(p.expectedSalePrice)}
-                            </td>
-                            <td className="px-3 py-3">{yen(p.propertyPrice)}</td>
-                            <td className="px-3 py-3">
-                              {yen(p.acquisitionCost)}
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <div className="mt-2 text-right">
-                      <Link href="#" className="text-sm text-slate-500">
-                        経営内訳を見る
-                      </Link>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 右下の＋ボタン：指定色（#FD9D24） */}
-            <div className="fixed bottom-6 right-6">
-              <Link
-                href="/create"
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FD9D24] text-2xl text-white shadow-lg hover:opacity-90 transition-opacity"
-              >
-                +
-              </Link>
-            </div>
+            {/* データを渡して表示させる */}
+            <ProjectDashboard projects={projects} />
           </section>
         </div>
       </main>
