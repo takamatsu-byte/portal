@@ -1,102 +1,166 @@
-import { prisma } from "@/app/lib/prisma";
-import { redirect } from "next/navigation";
 import Link from "next/link";
+import { prisma } from "@/app/lib/prisma";
 
-export default function CreatePage() {
-  // サーバーアクション（データを保存する機能）
-  async function createProject(formData: FormData) {
-    "use server";
+function yen(n: number | null | undefined) {
+  if (n === null || n === undefined) return "—";
+  return `${n.toLocaleString("ja-JP")} 円`;
+}
 
-    const propertyAddress = formData.get("address") as string;
-    const projectTotal = Number(formData.get("price"));
-    // コードは必須なので、今のところランダムな数字か入力値を使います
-    const code = formData.get("code") as string || `P-${Date.now()}`;
+function pctFromBp(bp: number | null | undefined) {
+  if (bp === null || bp === undefined) return "—";
+  return `${(bp / 100).toFixed(2)}%`;
+}
 
-    // データベースに保存
-    await prisma.project.create({
-      data: {
-        code: code, // 必須項目
-        propertyAddress: propertyAddress,
-        projectTotal: projectTotal,
-        // 他の数字項目は一旦0や固定値で埋めます（テスト用）
-        expectedRent: 0,
-        expectedYieldBp: 0,
-        agentRent: 0,
-        surfaceYieldBp: 0,
-        expectedSalePrice: 0,
-        propertyPrice: 0,
-        acquisitionCost: 0,
-      },
-    });
-
-    // 保存したらトップページに戻る
-    redirect("/");
-  }
+export default async function Page() {
+  const projects = await prisma.project.findMany({
+    orderBy: { createdAt: "desc" }
+  });
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
-      <div className="mx-auto max-w-md rounded-lg border bg-white p-6 shadow-sm">
-        <h1 className="mb-6 text-xl font-bold text-slate-800">新規案件登録</h1>
-        
-        <form action={createProject} className="space-y-4">
-          
-          {/* 物件コード */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">
-              物件コード (必須)
-            </label>
-            <input
-              name="code"
-              type="text"
-              required
-              className="w-full rounded border px-3 py-2 text-slate-700"
-              placeholder="例: P-001"
-            />
+    <div className="min-h-screen bg-slate-50">
+      {/* ヘッダー */}
+      <header className="bg-orange-400">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <div className="rounded bg-white px-4 py-2 text-sm font-semibold">
+            株式会社アキサス
           </div>
+          <div className="flex items-center gap-3 text-white">
+            <span className="text-sm">〇〇様</span>
+            <div className="h-8 w-8 rounded-full bg-white/30" />
+          </div>
+        </div>
+      </header>
 
-          {/* 物件所在地 */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">
-              物件所在地
-            </label>
-            <input
-              name="address"
-              type="text"
-              required
-              className="w-full rounded border px-3 py-2 text-slate-700"
-              placeholder="例: 東京都港区..."
-            />
-          </div>
+      <main className="mx-auto max-w-6xl px-6 py-8">
+        <div className="grid grid-cols-12 gap-6">
+          {/* 左メニュー */}
+          <aside className="col-span-12 md:col-span-3">
+            <div className="rounded-lg border bg-white p-4">
+              <div className="mb-3 text-sm font-semibold text-slate-600">
+                メニュー
+              </div>
+              <nav className="space-y-1 text-sm">
+                <div className="rounded bg-orange-50 px-3 py-2 text-orange-600">
+                  ホーム
+                </div>
+                <div className="rounded px-3 py-2 text-slate-600">
+                  案件情報
+                </div>
+                <div className="rounded px-3 py-2 text-slate-600">車両管理</div>
+                <div className="rounded px-3 py-2 text-slate-600">
+                  企業情報管理
+                </div>
+                <div className="rounded px-3 py-2 text-slate-600">設定</div>
+              </nav>
+            </div>
+          </aside>
 
-          {/* プロジェクト総額 */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">
-              プロジェクト総額 (円)
-            </label>
-            <input
-              name="price"
-              type="number"
-              className="w-full rounded border px-3 py-2 text-slate-700"
-              placeholder="10000000"
-            />
-          </div>
+          {/* 右コンテンツ */}
+          <section className="col-span-12 md:col-span-9">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-bold text-slate-800">案件情報</h1>
+                <p className="mt-1 text-sm text-slate-500">
+                  DBの案件データを表示中（全{projects.length}件）
+                </p>
+              </div>
 
-          <div className="flex gap-4 pt-4">
-            <Link
-              href="/"
-              className="flex-1 rounded border px-4 py-2 text-center text-sm text-slate-600 hover:bg-slate-50"
-            >
-              キャンセル
-            </Link>
-            <button
-              type="submit"
-              className="flex-1 rounded bg-orange-400 px-4 py-2 text-sm font-bold text-white hover:bg-orange-500"
-            >
-              保存する
-            </button>
-          </div>
-        </form>
-      </div>
+              <button className="rounded-md border bg-white px-4 py-2 text-sm">
+                編集パネル
+              </button>
+            </div>
+
+            <div className="rounded-lg border bg-white">
+              <div className="flex items-center justify-between border-b px-4 py-3">
+                <div className="font-semibold">案件一覧</div>
+                <div className="text-sm text-slate-500">
+                  件数：{projects.length}
+                </div>
+              </div>
+
+              <div className="divide-y">
+                {projects.length === 0 && (
+                  <div className="p-8 text-center text-slate-500">
+                    まだ案件がありません。右下の「＋」から登録してください。
+                  </div>
+                )}
+                {projects.map((p) => (
+                  <div key={p.id} className="p-4">
+                    <div className="mb-2 flex items-start justify-between gap-3">
+                      <div className="text-sm text-slate-600">
+                        <span className="font-semibold text-slate-700">
+                          物件所在地：
+                        </span>{" "}
+                        {p.propertyAddress}
+                      </div>
+
+                      <Link
+                        href="#"
+                        className="rounded-md border px-3 py-1 text-sm"
+                      >
+                        編集
+                      </Link>
+                    </div>
+
+                    <div className="overflow-x-auto rounded-lg border">
+                      <table className="min-w-[900px] w-full text-sm">
+                        <thead className="bg-slate-50 text-slate-600">
+                          <tr className="border-b">
+                            <th className="px-3 py-2 text-left">プロジェクト総額</th>
+                            <th className="px-3 py-2 text-left">想定家賃</th>
+                            <th className="px-3 py-2 text-left">想定利回り</th>
+                            <th className="px-3 py-2 text-left">客付け家賃</th>
+                            <th className="px-3 py-2 text-left">表面利回り</th>
+                            <th className="px-3 py-2 text-left">想定販売価格</th>
+                            <th className="px-3 py-2 text-left">物件価格</th>
+                            <th className="px-3 py-2 text-left">買取経費</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="bg-white">
+                            <td className="px-3 py-3">{yen(p.projectTotal)}</td>
+                            <td className="px-3 py-3">{yen(p.expectedRent)}</td>
+                            <td className="px-3 py-3">
+                              {pctFromBp(p.expectedYieldBp)}
+                            </td>
+                            <td className="px-3 py-3">{yen(p.agentRent)}</td>
+                            <td className="px-3 py-3">
+                              {pctFromBp(p.surfaceYieldBp)}
+                            </td>
+                            <td className="px-3 py-3">
+                              {yen(p.expectedSalePrice)}
+                            </td>
+                            <td className="px-3 py-3">{yen(p.propertyPrice)}</td>
+                            <td className="px-3 py-3">
+                              {yen(p.acquisitionCost)}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="mt-2 text-right">
+                      <Link href="#" className="text-sm text-slate-500">
+                        経営内訳を見る
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 右下の＋ボタン（ここをリンクに変更しました！） */}
+            <div className="fixed bottom-6 right-6">
+              <Link
+                href="/create"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-400 text-2xl text-white shadow-lg hover:bg-orange-500 transition-colors"
+              >
+                +
+              </Link>
+            </div>
+          </section>
+        </div>
+      </main>
     </div>
   );
 }
