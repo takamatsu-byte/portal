@@ -49,12 +49,7 @@ export default function Page() {
   const [modalTarget, setModalTarget] = useState<Property | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [mode, setMode] = useState<"create" | "edit">("create");
-
-  const [form, setForm] = useState({
-    name: "", assumedRent: "", customerRent: "",
-    expectedSalePrice: "", propertyPrice: "",
-    buyCostItems: [{ id: uid(), label: "", amount: "" }],
-  });
+  const [activeTab, setActiveTab] = useState<"仲介" | "転売" | "収益">("収益");
 
   useEffect(() => {
     async function fetchProjects() {
@@ -100,6 +95,12 @@ export default function Page() {
     } catch (err) { alert("保存に失敗しました"); }
   }
 
+  const [form, setForm] = useState({
+    name: "", assumedRent: "", customerRent: "",
+    expectedSalePrice: "", propertyPrice: "",
+    buyCostItems: [{ id: uid(), label: "", amount: "" }],
+  });
+
   function openEdit() {
     const p = properties.find(x => x.id === selectedId);
     if (!p) return;
@@ -133,7 +134,7 @@ export default function Page() {
           <span className="font-extrabold tracking-wide text-slate-800 text-2xl">PORTAL</span>
         </div>
         <nav className="flex-1 px-3 py-6 space-y-2">
-          <div className="flex items-center px-4 py-3 rounded-xl font-semibold bg-white text-[#FD9D24] shadow-sm cursor-default">収益物件一覧</div>
+          <div className="flex items-center px-4 py-3 rounded-xl font-semibold bg-white text-[#FD9D24] shadow-sm cursor-default">物件管理</div>
         </nav>
       </aside>
 
@@ -151,29 +152,60 @@ export default function Page() {
         </div>
 
         <div className="flex-1 overflow-hidden p-8 flex flex-col">
-          <div className="mb-6"><div className="bg-white p-4 rounded-xl border border-slate-100 w-56"><p className="text-xs font-semibold text-slate-500">登録物件数</p><p className="text-2xl font-bold text-slate-800 mt-1">{properties.length}件</p></div></div>
-          
-          <div className="flex-1 bg-white rounded-xl border border-slate-100 overflow-hidden flex flex-col h-full shadow-sm text-center">
+          {/* 上部スイッチエリア */}
+          <div className="flex items-center justify-center mb-8">
+            <div className="inline-flex bg-slate-200 p-1 rounded-full shadow-inner">
+              {(["仲介", "転売", "収益"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-10 py-2.5 rounded-full text-sm font-bold transition-all duration-200 ${
+                    activeTab === tab 
+                    ? "bg-white text-slate-800 shadow-md transform scale-105" 
+                    : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex-1 bg-white rounded-xl border border-slate-100 overflow-hidden flex flex-col h-full shadow-sm">
             <div className="flex-1 overflow-auto">
               <table className="min-w-full font-semibold border-collapse">
                 <thead>
-                  <tr className="bg-slate-50/80 border-b border-slate-100 text-xs text-slate-500 sticky top-0 z-20 uppercase tracking-wider h-14 text-center">
+                  <tr className="bg-slate-50 border-b border-slate-100 text-xs text-slate-500 sticky top-0 z-20 uppercase tracking-wider h-14">
                     <th className="px-6 text-left sticky left-0 bg-slate-50 z-30 shadow-[1px_0_0_0_rgba(0,0,0,0.05)]">物件名</th>
-                    <th className="px-4">総額</th><th className="px-4">想定家賃</th><th className="px-4">想定利回り</th><th className="px-4">客付け家賃</th><th className="px-4">表面利回り</th><th className="px-4">想定販売価格</th><th className="px-4">物件価格</th><th className="px-4">買取経費</th>
+                    <th className="px-4 text-center">総額</th>
+                    <th className="px-4 text-center">想定家賃</th>
+                    <th className="px-4 text-center">想定利回り</th>
+                    <th className="px-4 text-center">客付け家賃</th>
+                    <th className="px-4 text-center">表面利回り</th>
+                    <th className="px-4 text-center">想定販売価格</th>
+                    <th className="px-4 text-center">物件価格</th>
+                    <th className="px-4 text-center">買取経費</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50 text-slate-700">
+                <tbody className="divide-y divide-slate-50">
                   {properties.map((p) => (
-                    <tr key={p.id} className={`group cursor-pointer transition-colors ${selectedId === p.id ? "bg-orange-50/60" : "bg-white"} hover:bg-orange-50/30 text-center`} onClick={() => setSelectedId(p.id)}>
+                    <tr 
+                      key={p.id} 
+                      className={`group cursor-pointer transition-colors ${selectedId === p.id ? "bg-orange-50/80" : "bg-white hover:bg-orange-50/30"}`} 
+                      onClick={() => setSelectedId(p.id)}
+                    >
                       <td className="px-6 py-5 whitespace-nowrap text-left sticky left-0 z-10 bg-inherit border-r border-slate-100/50 font-bold">{p.name}</td>
-                      <td className="px-4 py-5">{formatNumber(p.projectTotal)}</td>
-                      <td className="px-4 py-5">{formatNumber(p.assumedRent)}</td>
-                      <td className="px-4 py-5 text-green-600 font-bold">{p.assumedYield}</td>
-                      <td className="px-4 py-5">{formatNumber(p.customerRent)}</td>
-                      <td className="px-4 py-5">{p.surfaceYield}</td>
-                      <td className="px-4 py-5">{formatNumber(p.expectedSalePrice)}</td>
-                      <td className="px-4 py-5">{formatNumber(p.propertyPrice)}</td>
-                      <td className="px-4 py-5 font-bold text-slate-800 select-none" onDoubleClick={() => setModalTarget(p)}>
+                      <td className="px-4 py-5 text-center">{formatNumber(p.projectTotal)}</td>
+                      <td className="px-4 py-5 text-center">{formatNumber(p.assumedRent)}</td>
+                      <td className="px-4 py-5 text-center text-green-600 font-bold">{p.assumedYield}</td>
+                      <td className="px-4 py-5 text-center">{formatNumber(p.customerRent)}</td>
+                      <td className="px-4 py-5 text-center">{p.surfaceYield}</td>
+                      <td className="px-4 py-5 text-center">{formatNumber(p.expectedSalePrice)}</td>
+                      <td className="px-4 py-5 text-center">{formatNumber(p.propertyPrice)}</td>
+                      <td 
+                        className="px-4 py-5 text-center font-bold text-slate-800 select-none" 
+                        onDoubleClick={() => setModalTarget(p)}
+                      >
                         {formatNumber(p.buyCostTotal)}
                       </td>
                     </tr>
@@ -184,6 +216,7 @@ export default function Page() {
           </div>
         </div>
 
+        {/* 右サイドパネル (登録・編集フォーム) */}
         {isPanelOpen && (
           <div className="fixed inset-0 z-50 flex justify-end">
             <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setIsPanelOpen(false)} />
@@ -192,7 +225,7 @@ export default function Page() {
                 <h2 className="text-xl font-bold text-slate-800">{mode === "create" ? "新規物件登録" : "物件情報の編集"}</h2>
                 <button onClick={() => setIsPanelOpen(false)} className="text-2xl text-slate-400 hover:text-slate-600">✕</button>
               </div>
-              <form onSubmit={upsertProperty} className="flex-1 overflow-auto p-8 space-y-6">
+              <form onSubmit={upsertProperty} className="flex-1 overflow-auto p-8 space-y-6 text-left">
                 <FieldZenkaku label="物件名" value={form.name} onChange={(v: string) => setForm({ ...form, name: v })} placeholder="物件名を入力してください" required />
                 <FieldNumeric label="物件価格" value={form.propertyPrice} onChange={(v: string) => setForm({ ...form, propertyPrice: v })} />
                 
@@ -223,7 +256,7 @@ export default function Page() {
           </div>
         )}
 
-        {/* 内訳表示モーダル */}
+        {/* 内訳モーダル */}
         {modalTarget && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setModalTarget(null)} />
@@ -255,6 +288,7 @@ export default function Page() {
   );
 }
 
+// 物件名・項目用（全角・制限なし）
 function FieldZenkaku({ label, value, onChange, placeholder, required }: { label: string, value: string, onChange: (v: string) => void, placeholder?: string, required?: boolean }) {
   return (
     <label className="block">
@@ -264,15 +298,13 @@ function FieldZenkaku({ label, value, onChange, placeholder, required }: { label
   );
 }
 
+// 数値用
 function FieldNumeric({ label, value, onChange }: { label: string, value: string, onChange: (v: string) => void }) {
   return (
     <label className="block">
       <div className="text-xs font-bold text-slate-400 mb-2 ml-1 uppercase tracking-wider">{label}</div>
       <input type="text" inputMode="numeric" value={value} 
-        onChange={(e) => {
-          const raw = e.target.value.replace(/[^0-9０-９]/g, '');
-          onChange(raw);
-        }}
+        onChange={(e) => onChange(e.target.value.replace(/[^0-9０-９]/g, ''))}
         onBlur={(e) => {
           const half = e.target.value.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
           onChange(half);
