@@ -1,6 +1,6 @@
 // src/app/api/projects/[id]/route.ts
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import type { NextRequest } from "next/server";
 
 function safeInt(v: unknown): number | null {
   const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
@@ -13,8 +13,8 @@ function calcBp(monthlyRent: number | null, projectTotal: number | null): number
   return Math.round((monthlyRent * 12 * 10000) / projectTotal);
 }
 
-export async function PUT(req: Request, ctx: { params: { id: string } }) {
-  const id = ctx.params.id;
+export async function PUT(request: NextRequest, context: { params: { promise<{ id: string } >} {
+  const{id}  = awaitcontext.params;
   const body = await req.json().catch(() => ({}));
 
   const name = String(body?.name ?? "").trim();
