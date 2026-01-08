@@ -1,77 +1,48 @@
-// src/app/api/projects/route.ts
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { PrismaClient } from "@prisma/client";
 
-function safeInt(v: unknown): number | null {
-  const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
-  if (!Number.isFinite(n)) return null;
-  return Math.trunc(n);
-}
+const prisma = new PrismaClient();
 
-function calcBp(monthlyRent: number | null, projectTotal: number | null): number | null {
-  if (!monthlyRent || !projectTotal || projectTotal <= 0) return null;
-  // bp = % * 100 = (rent*12/projectTotal*100) * 100 = rent*12/projectTotal*10000
-  return Math.round((monthlyRent * 12 * 10000) / projectTotal);
-}
-
+// データを取得する（読み込み）
 export async function GET() {
-  const projects = await prisma.project.findMany({
-    orderBy: { createdAt: "desc" },
-    include: { expenses: { orderBy: { id: "asc" } } },
-  });
-  return NextResponse.json(projects);
+  try {
+    const projects = await prisma.project.findMany({
+      include: { expenses: true },
+      orderBy: { createdAt: "desc" },
+    });
+    return NextResponse.json(projects);
+  } catch (error) {
+    return NextResponse.json({ error: "取得失敗" }, { status: 500 });
+  }
 }
 
-export async function POST(req: Request) {
-  const body = await req.json().catch(() => ({}));
-
-  const name = String(body?.name ?? "").trim();
-  if (!name) return NextResponse.json({ error: "物件名は必須です" }, { status: 400 });
-
-  const expectedRent = safeInt(body?.expectedRent); // 想定家賃（月）
-  const agentRent = safeInt(body?.agentRent); // 客付け家賃（月）
-  const expectedSalePrice = safeInt(body?.expectedSalePrice);
-  const propertyPrice = safeInt(body?.propertyPrice);
-
-  const expensesIn = Array.isArray(body?.expenses) ? body.expenses : [];
-  const expenses = expensesIn
-    .map((x: any) => ({
-      name: String(x?.name ?? "").trim(),
-      price: safeInt(x?.price) ?? 0,
-    }))
-    .filter((x: any) => x.name || x.price);
-
-  const acquisitionCost = expenses.reduce((s: number, x: any) => s + (x.price ?? 0), 0) || 0;
-
-  const projectTotal =
-    propertyPrice === null ? null : (propertyPrice ?? 0) + (acquisitionCost ?? 0);
-
-  const expectedYieldBp = calcBp(expectedRent, projectTotal);
-  const surfaceYieldBp = calcBp(agentRent, projectTotal);
-
-  const created = await prisma.project.create({
-    data: {
-      code: String(body?.code ?? "P").slice(0, 50),
-      propertyAddress: String(body?.propertyAddress ?? "").slice(0, 200),
-
-      projectTotal,
-      expectedRent,
-      expectedYieldBp,
-      agentRent,
-      surfaceYieldBp,
-      expectedSalePrice,
-      propertyPrice,
-
-      acquisitionCost,
-
-      expenses: expenses.length
-        ? {
-            create: expenses.map((e: any) => ({ name: e.name || "-", price: e.price ?? 0 })),
-          }
-        : undefined,
-    },
-    include: { expenses: { orderBy: { id: "asc" } } },
-  });
-
-  return NextResponse.json(created);
+// データを保存する（新規登録）
+export async function POST(request: Request) {
+  try {
+    const json = await request.json();
+    const project = await prisma.project.create({
+      data: {
+        code: json.name, // 物件名をcodeとして保存（Schemaに合わせる）
+        propertyAddress: "-",
+        projectTotal: json.projectTotal,
+        expectedRent: json.expectedRent,
+        expectedYieldBp: json.expectedYield,
+        agentRent: json.agentRent,
+        surfaceYieldBp: json.surfaceYield,
+        expectedSalePrice: json.expectedSalePrice,
+        propertyPrice: json.propertyPrice,
+        acquisitionCost: json.acquisitionCost,
+        expenses: {
+          create: json.expenses.map((e: any) => ({
+            name: e.label,
+            price: parseInt(e.amount.replace(/[^0-9]/g, "")) || 0,
+          })),
+        },
+      },
+    });
+    return NextResponse.json(project);
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: "保存失敗" }, { status: 500 });
+  }
 }
