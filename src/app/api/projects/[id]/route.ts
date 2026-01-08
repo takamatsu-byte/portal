@@ -1,4 +1,4 @@
-// src/app/api/projects/route.ts
+// src/app/api/projects/[id]/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -10,26 +10,18 @@ function safeInt(v: unknown): number | null {
 
 function calcBp(monthlyRent: number | null, projectTotal: number | null): number | null {
   if (!monthlyRent || !projectTotal || projectTotal <= 0) return null;
-  // bp = % * 100 = (rent*12/projectTotal*100) * 100 = rent*12/projectTotal*10000
   return Math.round((monthlyRent * 12 * 10000) / projectTotal);
 }
 
-export async function GET() {
-  const projects = await prisma.project.findMany({
-    orderBy: { createdAt: "desc" },
-    include: { expenses: { orderBy: { id: "asc" } } },
-  });
-  return NextResponse.json(projects);
-}
-
-export async function POST(req: Request) {
+export async function PUT(req: Request, ctx: { params: { id: string } }) {
+  const id = ctx.params.id;
   const body = await req.json().catch(() => ({}));
 
   const name = String(body?.name ?? "").trim();
   if (!name) return NextResponse.json({ error: "物件名は必須です" }, { status: 400 });
 
-  const expectedRent = safeInt(body?.expectedRent); // 想定家賃（月）
-  const agentRent = safeInt(body?.agentRent); // 客付け家賃（月）
+  const expectedRent = safeInt(body?.expectedRent);
+  const agentRent = safeInt(body?.agentRent);
   const expectedSalePrice = safeInt(body?.expectedSalePrice);
   const propertyPrice = safeInt(body?.propertyPrice);
 
@@ -49,7 +41,11 @@ export async function POST(req: Request) {
   const expectedYieldBp = calcBp(expectedRent, projectTotal);
   const surfaceYieldBp = calcBp(agentRent, projectTotal);
 
-  const created = await prisma.project.create({
+  // 内訳は一旦全削除→再作成（簡単で確実）
+  await prisma.expenseItem.deleteMany({ where: { projectId: id } });
+
+  const updated = await prisma.project.update({
+    where: { id },
     data: {
       code: String(body?.code ?? "P").slice(0, 50),
       propertyAddress: String(body?.propertyAddress ?? "").slice(0, 200),
@@ -73,5 +69,12 @@ export async function POST(req: Request) {
     include: { expenses: { orderBy: { id: "asc" } } },
   });
 
-  return NextResponse.json(created);
+  return NextResponse.json(updated);
+}
+
+export async function DELETE(_req: Request, ctx: { params: { id: string } }) {
+  const id = ctx.params.id;
+
+  await prisma.project.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
 }
