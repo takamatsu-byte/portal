@@ -14,7 +14,7 @@ type Property = {
 const BRAND_ORANGE = "#FD9D24";
 
 function uid() { return Math.random().toString(36).slice(2, 10); }
-function parseYen(input: string): number | null {
+function parseYen(input: any): number | null {
   if (!input) return null;
   const normalized = String(input).replace(/,/g, "").replace(/円/g, "");
   const n = Number(normalized);
@@ -29,7 +29,7 @@ function formatPercent(p: number | null, digits = 1): string {
   return `${p.toFixed(digits)}%`;
 }
 function toZenkakuLoose(input: string): string { return (input ?? "").replace(/ /g, "　"); }
-function toHankakuNumberOnly(input: string): string {
+function toHankakuNumberOnly(input: any): string {
   return String(input ?? "").replace(/[０-９]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0)).replace(/[,円\s]/g, "").replace(/[^0-9-]/g, "");
 }
 function ensureTrailingEmptyCostRow(items: CostItem[]): CostItem[] {
@@ -77,7 +77,6 @@ export default function Page() {
   async function upsertProperty(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name.trim()) return alert("物件名は必須です");
-
     const buyCostTotal = form.buyCostItems.reduce((sum, item) => sum + (parseYen(item.amount) || 0), 0);
     const pPrice = parseYen(form.propertyPriceYen) || 0;
     const payload = {
@@ -86,13 +85,10 @@ export default function Page() {
       customerRent: parseYen(form.customerRentYen), expectedSalePrice: parseYen(form.expectedSalePriceYen),
       expenses: form.buyCostItems.filter(i => i.label || i.amount)
     };
-
     try {
       const url = mode === "create" ? "/api/projects" : `/api/projects/${selectedId}`;
       const method = mode === "create" ? "POST" : "PUT";
-      const res = await fetch(url, {
-        method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
-      });
+      const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (res.ok) window.location.reload();
     } catch (err) { alert("保存に失敗しました"); }
   }
@@ -107,7 +103,7 @@ export default function Page() {
       customerRentYen: toHankakuNumberOnly(p.customerRentYen),
       expectedSalePriceYen: toHankakuNumberOnly(p.expectedSalePriceYen),
       propertyPriceYen: toHankakuNumberOnly(p.propertyPriceYen),
-      buyCostItems: ensureTrailingEmptyCostRow(p.buyCostBreakdown?.map(b => ({ id: uid(), label: b.label, amount: b.amount })) || [])
+      buyCostItems: ensureTrailingEmptyCostRow(p.buyCostBreakdown?.map(b => ({ id: uid(), label: b.label, amount: toHankakuNumberOnly(b.amount) })) || [])
     });
     setIsPanelOpen(true);
   }
@@ -161,23 +157,48 @@ export default function Page() {
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-100 text-sm text-slate-600 sticky top-0 z-20">
                     <th className="px-6 py-4 text-left sticky left-0 bg-slate-50 z-30 shadow-[1px_0_0_0_rgba(0,0,0,0.05)]">物件名</th>
-                    <th className="px-4 py-4">プロジェクト総額</th><th className="px-4 py-4">想定家賃</th><th className="px-4 py-4">想定利回り</th><th className="px-4 py-4">客付け家賃</th><th className="px-4 py-4">表面利回り</th><th className="px-4 py-4">想定販売価格</th><th className="px-4 py-4">物件価格</th><th className="px-4 py-4">買取経費</th>
+                    <th className="px-4 py-4 text-center">プロジェクト総額</th><th className="px-4 py-4 text-center">想定家賃</th><th className="px-4 py-4 text-center">想定利回り</th><th className="px-4 py-4 text-center">客付け家賃</th><th className="px-4 py-4 text-center">表面利回り</th><th className="px-4 py-4 text-center">想定販売価格</th><th className="px-4 py-4 text-center">物件価格</th><th className="px-4 py-4 text-center">買取経費</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {properties.map((p, idx) => (
+                <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
+                  {properties.map((p) => (
                     <React.Fragment key={p.id}>
-                      <tr className={`cursor-pointer transition-colors ${selectedId === p.id ? "bg-orange-50/80" : idx % 2 === 0 ? "bg-white" : "bg-slate-50/30"} hover:bg-orange-50/40`} onClick={() => setSelectedId(p.id)}>
-                        <td className="px-6 py-5 whitespace-nowrap text-left sticky left-0 z-10 bg-inherit border-r border-slate-100/50 font-bold">{p.name}</td>
-                        <td className="px-4 py-5 whitespace-nowrap">{p.projectTotalYen}</td><td className="px-4 py-5 whitespace-nowrap">{p.assumedRentYen}</td><td className="px-4 py-5 whitespace-nowrap text-green-600 font-bold">{p.assumedYield}</td><td className="px-4 py-5 whitespace-nowrap">{p.customerRentYen}</td><td className="px-4 py-5 whitespace-nowrap">{p.surfaceYield}</td><td className="px-4 py-5 whitespace-nowrap">{p.expectedSalePriceYen}</td><td className="px-4 py-5 whitespace-nowrap">{p.propertyPriceYen}</td>
-                        <td className="px-4 py-5 whitespace-nowrap">
-                          <div className="flex flex-col items-center gap-1"><span>{p.buyCostTotalYen}</span>{p.buyCostBreakdown && p.buyCostBreakdown.length > 0 && (
-                            <button type="button" onClick={(e) => { e.stopPropagation(); setExpandedIds(prev => ({ ...prev, [p.id]: !prev[p.id] })); }} className="text-[10px] text-[#FD9D24] hover:underline font-bold">{expandedIds[p.id] ? "閉じる" : "経費内訳を表示"}</button>
-                          )}</div>
+                      <tr 
+                        className={`cursor-pointer transition-colors bg-white hover:bg-orange-50/40 ${selectedId === p.id ? "bg-orange-50/80" : ""}`} 
+                        onClick={() => setSelectedId(p.id)}
+                      >
+                        <td className="px-6 py-6 whitespace-nowrap text-left sticky left-0 z-10 bg-inherit border-r border-slate-100/50 font-bold">{p.name}</td>
+                        <td className="px-4 py-6 whitespace-nowrap text-center">{p.projectTotalYen}</td>
+                        <td className="px-4 py-6 whitespace-nowrap text-center">{p.assumedRentYen}</td>
+                        <td className="px-4 py-6 whitespace-nowrap text-center text-green-600 font-bold">{p.assumedYield}</td>
+                        <td className="px-4 py-6 whitespace-nowrap text-center">{p.customerRentYen}</td>
+                        <td className="px-4 py-6 whitespace-nowrap text-center">{p.surfaceYield}</td>
+                        <td className="px-4 py-6 whitespace-nowrap text-center">{p.expectedSalePriceYen}</td>
+                        <td className="px-4 py-6 whitespace-nowrap text-center">{p.propertyPriceYen}</td>
+                        <td className="px-4 py-6 whitespace-nowrap text-center align-bottom min-h-[80px]">
+                          <div className="flex flex-col h-full justify-between items-center gap-2">
+                            <span className="mt-1">{p.buyCostTotalYen}</span>
+                            {p.buyCostBreakdown && p.buyCostBreakdown.length > 0 && (
+                              <button 
+                                type="button" 
+                                onClick={(e) => { e.stopPropagation(); setExpandedIds(prev => ({ ...prev, [p.id]: !prev[p.id] })); }} 
+                                className="text-[10px] text-[#FD9D24] hover:underline font-extrabold pb-1"
+                              >
+                                {expandedIds[p.id] ? "内訳を閉じる" : "経費内訳を表示"}
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                       {expandedIds[p.id] && (
-                        <tr className="bg-slate-50/50"><td colSpan={9} className="px-6 py-4"><div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm text-sm text-slate-800 text-left font-medium"><span className="text-slate-400 mr-2">【内訳】</span>{p.buyCostBreakdown?.map(b => `${b.label}：${b.amount}`).join(" / ") || "内訳なし"}</div></td></tr>
+                        <tr className="bg-slate-50/50">
+                          <td colSpan={9} className="px-6 py-4">
+                            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm text-sm text-slate-800 text-left font-medium">
+                              <span className="text-slate-400 mr-2 font-bold">【内訳】</span>
+                              {p.buyCostBreakdown?.map(b => `${b.label}：${b.amount}`).join(" / ") || "内訳なし"}
+                            </div>
+                          </td>
+                        </tr>
                       )}
                     </React.Fragment>
                   ))}
