@@ -1,30 +1,38 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { getServerSession } from "next-auth";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
+export async function GET() {
+  try {
+    const users = await prisma.user.findMany({
+      select: { id: true, name: true, email: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+    });
+    return NextResponse.json(users);
+  } catch (error) {
+    return NextResponse.json({ error: "取得失敗" }, { status: 500 });
+  }
+}
+
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession();
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
-    }
+    const { name, email, password } = await request.json();
 
-    const { newPassword } = await request.json();
+    // bcryptjsでパスワードをハッシュ化
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    if (!newPassword || newPassword.length < 4) {
-      return NextResponse.json({ error: "パスワードは4文字以上で入力してください" }, { status: 400 });
-    }
-
-    // ログイン中のユーザーのパスワードを更新
-    await prisma.user.update({
-      where: { email: session.user.email },
-      data: { password: newPassword },
+    const user = await prisma.user.create({
+      data: { 
+        name, 
+        email, 
+        password: hashedPassword
+      },
     });
 
-    return NextResponse.json({ message: "パスワードを更新しました" });
+    return NextResponse.json(user);
   } catch (error) {
-    return NextResponse.json({ error: "更新に失敗しました" }, { status: 500 });
+    return NextResponse.json({ error: "登録失敗" }, { status: 500 });
   }
 }
