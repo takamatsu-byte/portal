@@ -25,11 +25,11 @@ export async function DELETE(
 
     await prisma.user.delete({ where: { id } });
 
-    // 操作ログを記録
+    // 操作ログを記録 (session.user?.name のように ? を追加してエラーを回避)
     await prisma.auditLog.create({
       data: {
-        userId: (session.user as any).id || "unknown",
-        userName: session.user.name || "不明",
+        userId: (session.user as any)?.id || "unknown",
+        userName: session.user?.name || "不明",
         action: "DELETE",
         target: targetUser.name || targetUser.email,
         details: `${targetUser.email} を削除しました`
@@ -74,11 +74,11 @@ export async function PATCH(
       data
     });
 
-    // 操作ログを記録
+    // 操作ログを記録 (session.user?.name のように ? を追加してエラーを回避)
     await prisma.auditLog.create({
       data: {
-        userId: (session.user as any).id || "unknown",
-        userName: session.user.name || "不明",
+        userId: (session.user as any)?.id || "unknown",
+        userName: session.user?.name || "不明",
         action: "UPDATE",
         target: updatedUser.name || updatedUser.email,
         details: detailMsg
