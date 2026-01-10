@@ -20,7 +20,6 @@ const handler = NextAuth({
           where: { email: credentials.email }
         });
 
-        // bcryptjsでハッシュ化されたパスワードを照合
         if (user && await bcrypt.compare(credentials.password, user.password)) {
           return {
             id: user.id,
@@ -32,8 +31,12 @@ const handler = NextAuth({
       }
     })
   ],
-  pages: { signIn: "/login", error: "/login" },
-  session: { strategy: "jwt" },
+  pages: {
+    signIn: "/login",
+  },
+  session: {
+    strategy: "jwt",
+  },
   secret: process.env.NEXTAUTH_SECRET,
 });
 
