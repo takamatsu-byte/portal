@@ -1,110 +1,78 @@
-// クライアントの生成設定（そのまま）
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
 
-// データベース接続設定（そのまま）
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
-// ▼ ここから下を貼り付けてください ▼
-
-// 1. 収益物件データの設計図
-model Project {
-  id                String   @id @default(cuid())
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
-  code              String
-  propertyAddress   String
-  
-  projectTotal      Int?
-  expectedRent      Int?
-  expectedYieldBp   Int?
-  agentRent         Int?
-  surfaceYieldBp    Int?
-  expectedSalePrice Int?
-  propertyPrice     Int?
-  
-  acquisitionCost   Int?
-  
-  expenses          ExpenseItem[]
+// 案件の状態（進行中、または完了後の種別）
+enum ProjectStatus {
+  PROSPECT    // 検討中・資料整理中
+  REVENUE     // 完了：収益物件
+  RESALE      // 完了：転売物件
+  BROKERAGE   // 完了：仲介物件
 }
 
-// 収益物件の経費内訳
+// 物件管理（全ての案件の親玉）
+model Project {
+  id                  String        @id @default(cuid())
+  status              ProjectStatus @default(PROSPECT) // 最初は「検討中」
+  code                String?       // 管理コード
+  propertyAddress     String?       // 所在（物件名）
+  propertyPrice       Float?        // 仕入れ・物件価格
+  acquisitionCost     Float?        // 経費合計
+  projectTotal        Float?        // 総額
+  googleDriveFolderId String?       // GoogleドライブフォルダID
+  
+  // 【収益用項目】
+  expectedRent        Float?        // 想定家賃
+  expectedYieldBp     Float?        // 想定利回り
+  agentRent           Float?        // 客付家賃
+  surfaceYieldBp      Float?        // 表面利回り
+
+  // 【転売・販売用項目】
+  expectedSalePrice   Float?        // 販売予定価格
+  actualSalePrice     Float?        // 実際の成約価格
+
+  // 【仲介用項目】
+  brokerageSales      Float?        // 仲介手数料などの売上
+
+  // 【土地情報】(共通)
+  landLotNumber       String?       // 地番
+  landCategory        String?       // 地目
+  landArea            Float?        // 地積(㎡)
+  landOwnerAddress    String?       // 土地所有者住所
+  landOwnerName       String?       // 土地所有者名
+
+  // 【建物情報】(共通)
+  buildingHouseNumber String?       // 家屋番号
+  buildingType        String?       // 種類
+  buildingStructure   String?       // 構造
+  buildingFloors      String?       // 床面積
+  buildingAge         String?       // 築年数
+  buildingOwnerAddress String?      // 建物所有者住所
+  buildingOwnerName    String?      // 建物所有者名
+
+  // 【スケジュール】(共通)
+  contractDate        String?       // 契約日
+  settlementDate      String?       // 決済日
+  
+  expenses            ExpenseItem[] // 経費の内訳
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+}
+
+// 経費の内訳（どの物件にも紐付けられます）
 model ExpenseItem {
   id        String  @id @default(cuid())
-  name      String
-  price     Int
-  
+  name      String  // 経費名（登記費用、リフォーム代など）
+  price     Float   // 金額
+  projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  projectId String
-}
-
-
-// 2. 仲介・紹介案件データの設計図
-model BrokerageProject {
-  id                String   @id @default(cuid())
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
-  code              String
-  propertyAddress   String
-  
-  // ★追加した新しい項目（売上・日付）
-  sales             Int?
-  contractDate      String?
-  settlementDate    String?
-  
-  acquisitionCost   Int?
-  
-  // エラー防止のため古い項目も定義だけ残しておく
-  projectTotal      Int?
-  expectedRent      Int?
-  expectedYieldBp   Int?
-  agentRent         Int?
-  surfaceYieldBp    Int?
-  expectedSalePrice Int?
-  propertyPrice     Int?
-
-  expenses          BrokerageExpenseItem[]
-}
-
-// 仲介・紹介案件の経費内訳
-model BrokerageExpenseItem {
-  id        String  @id @default(cuid())
-  name      String
-  price     Int
-  
-  project   BrokerageProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  projectId String
-}
-// 3. 転売案件データの設計図
-model ResaleProject {
-  id                String   @id @default(cuid())
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
-  code              String
-  propertyAddress   String   @default("-")
-  
-  propertyPrice     Int?     // 物件価格
-  acquisitionCost   Int?     // 買取経費
-  projectTotal      Int?     // 総額
-  expectedSalePrice Int?     // 想定販売価格
-
-  expenses          ResaleExpenseItem[]
-}
-
-// 転売案件の経費内訳
-model ResaleExpenseItem {
-  id        String        @id @default(cuid())
-  name      String
-  price     Int
-  
-  project   ResaleProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  projectId String
 }
