@@ -1,39 +1,46 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
-const prisma = new PrismaClient();
-
-export async function GET() {
-  try {
-    const projects = await prisma.brokerageProject.findMany({
-      include: { expenses: true },
-      orderBy: { createdAt: "desc" },
-    });
-    return NextResponse.json(projects);
-  } catch (error) {
-    return NextResponse.json({ error: "取得失敗" }, { status: 500 });
-  }
-}
-
+// 転売案件を保存するプログラム
 export async function POST(request: Request) {
   try {
-    const json = await request.json();
-    const project = await prisma.brokerageProject.create({
+    const body = await request.json();
+    
+    const project = await prisma.resaleProject.create({
       data: {
-        code: json.name,
-        propertyAddress: "仲介",
-        sales: json.expectedSalePrice,
-        acquisitionCost: json.acquisitionCost,
+        code: body.name, // 物件名をコードとして保存
+        propertyAddress: body.name,
+        propertyPrice: body.propertyPrice,
+        acquisitionCost: body.acquisitionCost,
+        projectTotal: body.projectTotal,
+        expectedRent: body.expectedRent,
+        expectedSalePrice: body.expectedSalePrice,
+        // 経費の内訳も一緒に保存する
         expenses: {
-          create: json.expenses.map((e: any) => ({
-            name: e.label,
-            price: typeof e.amount === 'string' ? parseInt(e.amount.replace(/[^0-9]/g, "")) || 0 : e.amount,
+          create: body.expenses.map((e: any) => ({
+            name: e.name,
+            price: e.price,
           })),
         },
       },
     });
+
     return NextResponse.json(project);
   } catch (error) {
-    return NextResponse.json({ error: "保存失敗" }, { status: 500 });
+    console.error("保存エラー:", error);
+    return NextResponse.json({ error: "保存に失敗しました" }, { status: 500 });
+  }
+}
+
+// 転売案件の一覧を取得するプログラム
+export async function GET() {
+  try {
+    const projects = await prisma.resaleProject.findMany({
+      include: { expenses: true },
+      orderBy: { createdAt: 'desc' }
+    });
+    return NextResponse.json(projects);
+  } catch (error) {
+    return NextResponse.json({ error: "取得に失敗しました" }, { status: 500 });
   }
 }
