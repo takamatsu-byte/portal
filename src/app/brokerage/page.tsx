@@ -42,6 +42,7 @@ export default function Page() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [modalTarget, setModalTarget] = useState<Property | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -52,7 +53,6 @@ export default function Page() {
     buyCostItems: [{ id: uid(), label: "", amount: "" }],
   });
 
-  // データを取得する関数を定義
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -68,13 +68,9 @@ export default function Page() {
           name: p.propertyAddress || p.code || "-",
           projectTotal: p.projectTotal || 0,
           assumedRent: p.expectedRent || 0,
-          assumedYield: p.expectedYieldBp
-            ? `${p.expectedYieldBp.toFixed(1)}%`
-            : "-",
+          assumedYield: p.expectedYieldBp ? `${p.expectedYieldBp.toFixed(1)}%` : "-",
           customerRent: p.agentRent || 0,
-          surfaceYield: p.surfaceYieldBp
-            ? `${p.surfaceYieldBp.toFixed(1)}%`
-            : "-",
+          surfaceYield: p.surfaceYieldBp ? `${p.surfaceYieldBp.toFixed(1)}%` : "-",
           expectedSalePrice: p.expectedSalePrice || p.sales || 0,
           propertyPrice: p.propertyPrice || 0,
           buyCostTotal: p.acquisitionCost || 0,
@@ -88,7 +84,7 @@ export default function Page() {
       if (brokRes.ok) setBrokerageData(format(await brokRes.json()));
       if (resalRes.ok) setResaleData(format(await resalRes.json()));
     } catch (e) {
-      console.error("データの取得に失敗しました:", e);
+      console.error("データ取得失敗:", e);
     } finally {
       setIsLoading(false);
     }
@@ -98,23 +94,55 @@ export default function Page() {
     fetchData();
   }, [fetchData]);
 
+  // 削除ボタンの処理
+  async function handleDelete() {
+    if (!selectedId) return;
+    if (!confirm("本当にこの物件を削除しますか？")) return;
+
+    const endpointBase = activeTab === "仲介" ? "/api/brokerage" : activeTab === "転売" ? "/api/resale" : "/api/projects";
+    
+    try {
+      const res = await fetch(`${endpointBase}?id=${selectedId}`, { method: "DELETE" });
+      if (res.ok) {
+        setSelectedId(null);
+        await fetchData();
+      } else {
+        alert("削除に失敗しました。");
+      }
+    } catch (err) {
+      alert("通信エラーが発生しました。");
+    }
+  }
+
+  // 編集パネルを開く処理
+  function openEditPanel() {
+    const properties = activeTab === "仲介" ? brokerageData : activeTab === "転売" ? resaleData : investmentData;
+    const target = properties.find(p => p.id === selectedId);
+    if (!target) return;
+
+    setIsEditMode(true);
+    setForm({
+      name: target.name,
+      assumedRent: target.assumedRent?.toString() || "",
+      customerRent: target.customerRent?.toString() || "",
+      expectedSalePrice: target.expectedSalePrice?.toString() || "",
+      propertyPrice: target.propertyPrice?.toString() || "",
+      buyCostItems: target.buyCostBreakdown?.length 
+        ? target.buyCostBreakdown.map(b => ({ id: uid(), label: b.label, amount: b.amount.replace(/,/g, "") }))
+        : [{ id: uid(), label: "", amount: "" }]
+    });
+    setIsPanelOpen(true);
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-
-    const buyCostTotal = form.buyCostItems.reduce(
-      (sum, item) => sum + (parseNumber(item.amount) || 0),
-      0
-    );
+    const buyCostTotal = form.buyCostItems.reduce((sum, item) => sum + (parseNumber(item.amount) || 0), 0);
     const pPrice = parseNumber(form.propertyPrice) || 0;
 
-    const endpoint =
-      activeTab === "仲介"
-        ? "/api/brokerage"
-        : activeTab === "転売"
-        ? "/api/resale"
-        : "/api/projects";
+    const endpoint = activeTab === "仲介" ? "/api/brokerage" : activeTab === "転売" ? "/api/resale" : "/api/projects";
 
     const payload = {
+      id: isEditMode ? selectedId : undefined,
       name: form.name,
       propertyPrice: pPrice,
       acquisitionCost: buyCostTotal,
@@ -129,56 +157,51 @@ export default function Page() {
 
     try {
       const res = await fetch(endpoint, {
-        method: "POST",
+        method: isEditMode ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       if (res.ok) {
-        // 保存成功時の処理
-        await fetchData(); // リロードせずにデータを再取得
-        setIsPanelOpen(false); // パネルを閉じる
-        setForm({ // フォームを空にする
-          name: "",
-          assumedRent: "",
-          customerRent: "",
-          expectedSalePrice: "",
-          propertyPrice: "",
+        await fetchData();
+        setIsPanelOpen(false);
+        setIsEditMode(false);
+        setSelectedId(null);
+        setForm({
+          name: "", assumedRent: "", customerRent: "", expectedSalePrice: "", propertyPrice: "",
           buyCostItems: [{ id: uid(), label: "", amount: "" }],
         });
       } else {
-        const errData = await res.json();
-        alert(`保存に失敗しました: ${errData.error || "サーバーエラー"}`);
+        alert("保存に失敗しました。");
       }
     } catch (err) {
       alert("通信に失敗しました。");
     }
   }
 
-  const currentProperties =
-    activeTab === "仲介"
-      ? brokerageData
-      : activeTab === "転売"
-      ? resaleData
-      : investmentData;
+  const currentProperties = activeTab === "仲介" ? brokerageData : activeTab === "転売" ? resaleData : investmentData;
 
   return (
     <div className="flex h-screen overflow-hidden font-sans text-slate-600 bg-slate-50">
       <aside className="w-64 text-white flex flex-col flex-shrink-0" style={{ backgroundColor: BRAND_ORANGE }}>
-        <div className="h-28 flex items-center px-6 bg-white">
-          <span className="text-slate-800 text-2xl font-black">PORTAL</span>
-        </div>
-        <nav className="p-4">
-          <div className="bg-white text-[#FD9D24] p-3 rounded-xl font-bold text-center shadow-sm text-sm">物件管理</div>
-        </nav>
+        <div className="h-28 flex items-center px-6 bg-white"><span className="text-slate-800 text-2xl font-black">PORTAL</span></div>
+        <nav className="p-4"><div className="bg-white text-[#FD9D24] p-3 rounded-xl font-bold text-center shadow-sm text-sm">物件管理</div></nav>
       </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="bg-white h-28 border-b flex items-center justify-end px-8">
           <div className="inline-flex items-center rounded-full border border-slate-200 bg-white shadow-sm h-12 overflow-hidden">
-            <button onClick={() => setIsPanelOpen(true)} className="px-8 h-full font-bold text-slate-700 hover:text-white hover:bg-[#FD9D24] transition-all border-r outline-none">＋ 追加</button>
-            <button disabled className="px-8 h-full font-bold text-slate-300 transition-all border-r outline-none cursor-not-allowed">編集</button>
-            <button disabled className="px-8 h-full font-bold text-slate-300 transition-all outline-none cursor-not-allowed">削除</button>
+            <button onClick={() => { setIsEditMode(false); setIsPanelOpen(true); }} className="px-8 h-full font-bold text-slate-700 hover:text-white hover:bg-[#FD9D24] transition-all border-r outline-none">＋ 追加</button>
+            <button 
+              onClick={openEditPanel}
+              disabled={!selectedId}
+              className={`px-8 h-full font-bold transition-all border-r outline-none ${selectedId ? "text-slate-700 hover:text-white hover:bg-[#FD9D24]" : "text-slate-300 cursor-not-allowed"}`}
+            >編集</button>
+            <button 
+              onClick={handleDelete}
+              disabled={!selectedId}
+              className={`px-8 h-full font-bold transition-all outline-none ${selectedId ? "text-red-500 hover:text-white hover:bg-red-500" : "text-slate-300 cursor-not-allowed"}`}
+            >削除</button>
           </div>
         </header>
 
@@ -188,16 +211,9 @@ export default function Page() {
               {["仲介", "転売", "収益"].map((tab) => (
                 <button
                   key={tab}
-                  onClick={() => {
-                    setActiveTab(tab as any);
-                    setSelectedId(null);
-                  }}
-                  className={`px-12 py-3 rounded-full text-sm font-bold transition-all ${
-                    activeTab === tab ? "bg-white text-slate-800 shadow-md" : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  {tab}
-                </button>
+                  onClick={() => { setActiveTab(tab as any); setSelectedId(null); }}
+                  className={`px-12 py-3 rounded-full text-sm font-bold transition-all ${activeTab === tab ? "bg-white text-slate-800 shadow-md" : "text-slate-500 hover:text-slate-700"}`}
+                >{tab}</button>
               ))}
             </div>
           </div>
@@ -228,7 +244,7 @@ export default function Page() {
                       <td className="px-4">{p.surfaceYield}</td>
                       <td className="px-4">{formatNumber(p.expectedSalePrice)}</td>
                       <td className="px-4">{formatNumber(p.propertyPrice)}</td>
-                      <td className="font-bold select-none px-4" onDoubleClick={() => setModalTarget(p)}>{formatNumber(p.buyCostTotal)}</td>
+                      <td className="font-bold select-none px-4" onDoubleClick={(e) => { e.stopPropagation(); setModalTarget(p); }}>{formatNumber(p.buyCostTotal)}</td>
                     </tr>
                   ))
                 ) : (
@@ -243,16 +259,10 @@ export default function Page() {
           <div className="fixed inset-0 z-50 flex justify-end">
             <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setIsPanelOpen(false)} />
             <div className="relative w-[540px] bg-white h-full shadow-2xl p-8 flex flex-col">
-              <h2 className="text-2xl font-bold mb-8 border-b pb-4">{activeTab}案件登録</h2>
+              <h2 className="text-2xl font-bold mb-8 border-b pb-4">{activeTab}案件{isEditMode ? "編集" : "登録"}</h2>
               <form onSubmit={handleSave} className="space-y-6 flex-1 overflow-auto text-left">
-                <label className="block space-y-2">
-                  <span className="text-xs font-bold text-slate-400">物件名</span>
-                  <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border-2 p-4 rounded-xl font-bold" required />
-                </label>
-                <label className="block space-y-2">
-                  <span className="text-xs font-bold text-slate-400">物件価格</span>
-                  <input value={form.propertyPrice} onChange={(e) => setForm({ ...form, propertyPrice: e.target.value.replace(/[^0-9]/g, "") })} className="w-full border-2 p-4 rounded-xl font-bold text-right" />
-                </label>
+                <label className="block space-y-2"><span className="text-xs font-bold text-slate-400">物件名</span><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border-2 p-4 rounded-xl font-bold" required /></label>
+                <label className="block space-y-2"><span className="text-xs font-bold text-slate-400">物件価格</span><input value={form.propertyPrice} onChange={(e) => setForm({ ...form, propertyPrice: e.target.value.replace(/[^0-9]/g, "") })} className="w-full border-2 p-4 rounded-xl font-bold text-right" /></label>
                 <div className="bg-slate-50 p-4 rounded-2xl space-y-3">
                   <div className="flex justify-between font-bold text-sm">買取経費内訳 <button type="button" onClick={() => setForm({ ...form, buyCostItems: [...form.buyCostItems, { id: uid(), label: "", amount: "" }] })} className="text-[#FD9D24]">＋追加</button></div>
                   {form.buyCostItems.map((item) => (
@@ -269,19 +279,10 @@ export default function Page() {
                   ))}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <label className="block space-y-2">
-                    <span className="text-xs font-bold text-slate-400">想定家賃</span>
-                    <input value={form.assumedRent} onChange={(e) => setForm({ ...form, assumedRent: e.target.value.replace(/[^0-9]/g, "") })} className="w-full border-2 p-4 rounded-xl font-bold text-right" />
-                  </label>
-                  <label className="block space-y-2">
-                    <span className="text-xs font-bold text-slate-400">客付家賃</span>
-                    <input value={form.customerRent} onChange={(e) => setForm({ ...form, customerRent: e.target.value.replace(/[^0-9]/g, "") })} className="w-full border-2 p-4 rounded-xl font-bold text-right" />
-                  </label>
+                  <label className="block space-y-2"><span className="text-xs font-bold text-slate-400">想定家賃</span><input value={form.assumedRent} onChange={(e) => setForm({ ...form, assumedRent: e.target.value.replace(/[^0-9]/g, "") })} className="w-full border-2 p-4 rounded-xl font-bold text-right" /></label>
+                  <label className="block space-y-2"><span className="text-xs font-bold text-slate-400">客付家賃</span><input value={form.customerRent} onChange={(e) => setForm({ ...form, customerRent: e.target.value.replace(/[^0-9]/g, "") })} className="w-full border-2 p-4 rounded-xl font-bold text-right" /></label>
                 </div>
-                <label className="block space-y-2">
-                  <span className="text-xs font-bold text-slate-400">販売価格 / 売上</span>
-                  <input value={form.expectedSalePrice} onChange={(e) => setForm({ ...form, expectedSalePrice: e.target.value.replace(/[^0-9]/g, "") })} className="w-full border-2 p-4 rounded-xl font-bold text-right" />
-                </label>
+                <label className="block space-y-2"><span className="text-xs font-bold text-slate-400">販売価格 / 売上</span><input value={form.expectedSalePrice} onChange={(e) => setForm({ ...form, expectedSalePrice: e.target.value.replace(/[^0-9]/g, "") })} className="w-full border-2 p-4 rounded-xl font-bold text-right" /></label>
                 <div className="flex gap-4 pt-4 sticky bottom-0 bg-white">
                   <button type="button" onClick={() => setIsPanelOpen(false)} className="flex-1 border-2 p-4 rounded-xl font-bold text-slate-400">取消</button>
                   <button type="submit" className="flex-1 bg-[#FD9D24] text-white p-4 rounded-xl font-bold shadow-lg">保存</button>
@@ -298,10 +299,7 @@ export default function Page() {
               <h3 className="text-xl font-bold mb-6 text-center border-b pb-4">買取経費内訳</h3>
               <div className="space-y-4 mb-8">
                 {modalTarget.buyCostBreakdown?.map((b, i) => (
-                  <div key={i} className="flex justify-between font-bold text-sm">
-                    <span className="text-slate-400">{b.label}</span>
-                    <span>{b.amount}</span>
-                  </div>
+                  <div key={i} className="flex justify-between font-bold text-sm"><span className="text-slate-400">{b.label}</span><span>{b.amount}</span></div>
                 ))}
               </div>
               <button onClick={() => setModalTarget(null)} className="w-full bg-[#FD9D24] text-white py-4 rounded-2xl font-bold">閉じる</button>
