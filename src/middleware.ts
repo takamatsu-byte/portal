@@ -7,6 +7,11 @@ export default withAuth({
 });
 
 export const config = {
-  // 認証が必要なページを指定
-  matcher: ["/brokerage/:path*", "/documents/:path*"],
+  // 認証が必要なルートを指定
+  matcher: [
+    "/brokerage/:path*",
+    "/documents/:path*",
+    "/settings/:path*",
+    "/api/projects/:path*",
+  ],
 };
