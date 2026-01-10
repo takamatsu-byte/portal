@@ -8,16 +8,15 @@ export async function POST(request: Request) {
     
     const project = await prisma.resaleProject.create({
       data: {
-        code: body.name, // 物件名をコードとして保存
+        code: body.name, 
         propertyAddress: body.name,
         propertyPrice: body.propertyPrice,
         acquisitionCost: body.acquisitionCost,
         projectTotal: body.projectTotal,
-        expectedRent: body.expectedRent,
         expectedSalePrice: body.expectedSalePrice,
-        // 経費の内訳も一緒に保存する
+        // 転売モデルには expectedRent が存在しないため削除しました
         expenses: {
-          create: body.expenses.map((e: any) => ({
+          create: (body.expenses || []).map((e: any) => ({
             name: e.name,
             price: e.price,
           })),
