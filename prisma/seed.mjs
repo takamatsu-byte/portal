@@ -1,32 +1,34 @@
 import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcrypt'
 
 const prisma = new PrismaClient()
 
 async function main() {
-  // admin@example.com というユーザーがいない場合のみ作成
-  const targetEmail = 'takamatsu@akisasu.com'; // ★ここを自由に変えてください
+  const targetEmail = 'admin@example.com'; // あなたのメールアドレス
+  const plainPassword = 'password123';   // あなたのパスワード
   
-  const existingUser = await prisma.user.findUnique({
-    where: { email: targetEmail }, 
+  // パスワードを10回ハッシュ化（暗号化）
+  const hashedPassword = await bcrypt.hash(plainPassword, 10);
+
+  // DBにユーザーを登録、または既存ならパスワードを更新
+  await prisma.user.upsert({
+    where: { email: targetEmail },
+    update: {
+      password: hashedPassword,
+    },
+    create: {
+      email: targetEmail,
+      password: hashedPassword,
+      name: '管理者',
+    },
   });
 
-  if (!existingUser) {
-    await prisma.user.create({
-      data: {
-        email: targetEmail,
-        password: 'taka8846', // ★ここを自由に変えてください
-        name: '管理者',
-      },
-    });
-    console.log('✅ ユーザーの作成に成功しました');
-  } else {
-    console.log('ℹ️ すでにユーザーが存在するため、作成をスキップしました');
-  }
+  console.log('✅ ユーザー情報を暗号化済みパスワードで更新しました');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ エラーが発生しました:', e);
+    console.error(e);
     process.exit(1);
   })
   .finally(async () => {
