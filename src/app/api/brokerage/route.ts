@@ -25,9 +25,10 @@ export async function POST(request: Request) {
         propertyPrice: body.propertyPrice,
         acquisitionCost: body.acquisitionCost,
         projectTotal: body.projectTotal,
-        expectedRent: body.expectedRent,
-        agentRent: body.customerRent,
-        expectedSalePrice: body.expectedSalePrice,
+        // 仲介専用の項目を保存
+        sales: body.sales,
+        contractDate: body.contractDate,
+        settlementDate: body.settlementDate,
         expenses: {
           create: (body.expenses || []).map((e: any) => ({ name: e.name, price: e.price })),
         },
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
     });
     return NextResponse.json(project);
   } catch (error) {
+    console.error("保存エラー:", error);
     return NextResponse.json({ error: "保存失敗" }, { status: 500 });
   }
 }
@@ -56,9 +58,10 @@ export async function PUT(request: Request) {
         propertyPrice: data.propertyPrice,
         acquisitionCost: data.acquisitionCost,
         projectTotal: data.projectTotal,
-        expectedRent: data.expectedRent,
-        agentRent: data.customerRent,
-        expectedSalePrice: data.expectedSalePrice,
+        // 仲介専用の項目を更新
+        sales: data.sales,
+        contractDate: data.contractDate,
+        settlementDate: data.settlementDate,
         expenses: {
           create: (data.expenses || []).map((e: any) => ({ name: e.name, price: e.price })),
         },
