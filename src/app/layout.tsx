@@ -4,7 +4,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FolderOpen, LayoutDashboard, LogOut } from "lucide-react";
+import { FolderOpen, LayoutDashboard, LogOut, Settings } from "lucide-react"; // Settingsを追加
 import { signOut, SessionProvider } from "next-auth/react";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -54,6 +54,14 @@ export default function RootLayout({
                     <div className={`p-4 rounded-xl font-bold text-center text-sm cursor-pointer transition-all flex items-center justify-center gap-2 ${getBtnClass("/documents")}`}>
                       <FolderOpen size={18} />
                       物件資料
+                    </div>
+                  </Link>
+
+                  {/* ★設定（ユーザー管理）ボタンを追加 */}
+                  <Link href="/settings">
+                    <div className={`p-4 rounded-xl font-bold text-center text-sm cursor-pointer transition-all flex items-center justify-center gap-2 ${getBtnClass("/settings")}`}>
+                      <Settings size={18} />
+                      設定
                     </div>
                   </Link>
                 </nav>
