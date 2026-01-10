@@ -1,11 +1,13 @@
 import NextAuth from "next-auth";
+import type { NextAuthOptions } from "next-auth"; // 型を追加
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
-const handler = NextAuth({
+// 設定を export することで他のAPIから参照可能にします
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -15,29 +17,20 @@ const handler = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
-
         const user = await prisma.user.findUnique({
           where: { email: credentials.email }
         });
-
         if (user && await bcrypt.compare(credentials.password, user.password)) {
-          return {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-          };
+          return { id: user.id, name: user.name, email: user.email };
         }
         return null;
       }
     })
   ],
-  pages: {
-    signIn: "/login",
-  },
-  session: {
-    strategy: "jwt",
-  },
+  pages: { signIn: "/login" },
+  session: { strategy: "jwt" },
   secret: process.env.NEXTAUTH_SECRET,
-});
+};
 
+const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
