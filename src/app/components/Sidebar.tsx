@@ -4,19 +4,18 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
-  LayoutDashboard, 
   FolderOpen, 
   Settings, 
   LogOut,
   Building2,
-  FileText
+  User 
 } from "lucide-react";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
 
-  // メニュー項目に「設定」が含まれていることを確認済み
   const menuItems = [
     { name: "物件管理", href: "/brokerage", icon: Building2 },
     { name: "物件資料", href: "/documents", icon: FolderOpen },
@@ -47,9 +46,17 @@ export default function Sidebar() {
       </nav>
 
       <div className="p-8 border-t border-white/10">
+        {/* 名前表示部分 */}
+        {session?.user && (
+          <div className="flex items-center gap-3 px-6 py-2 mb-2 text-white/80 border-b border-white/5 pb-4">
+            <User size={18} className="text-orange-400" />
+            <span className="font-bold text-sm truncate">{session.user.name}</span>
+          </div>
+        )}
+        
         <button 
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-3 text-white/40 hover:text-red-400 transition-colors w-full px-6 py-2"
+          className="flex items-center gap-3 text-white/40 hover:text-red-400 transition-colors w-full px-6 py-2 mt-2"
         >
           <LogOut size={20} />
           <span className="font-bold text-sm text-left">ログアウト</span>

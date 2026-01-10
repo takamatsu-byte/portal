@@ -88,3 +88,13 @@ model ExpenseItem {
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
+// 既存のUserテーブルの下に以下を追加
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String   // 操作したユーザーのID
+  userName  String   // 操作したユーザーの名前（履歴保存用）
+  action    String   // 操作内容（例: ユーザー編集、削除）
+  target    String   // 操作対象（例: 誰の情報を変えたか）
+  details   String?  // 具体的な変更内容
+  createdAt DateTime @default(now())
+}
