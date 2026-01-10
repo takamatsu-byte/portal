@@ -4,25 +4,25 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function main() {
-  const targetEmail = 'admin@example.com'; 
-  const plainPassword = 'password123';   
+  // ★ここにログインしたいメールアドレスとパスワードを入力してください
+  const adminEmail = 'takamatsu@akisasu.com'; 
+  const adminPassword = 'pass0123'; 
   
-  // bcryptjsを使用してパスワードをハッシュ化
-  const hashedPassword = await bcrypt.hash(plainPassword, 10);
+  const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
   await prisma.user.upsert({
-    where: { email: targetEmail },
+    where: { email: adminEmail },
     update: {
       password: hashedPassword,
     },
     create: {
-      email: targetEmail,
+      email: adminEmail,
       password: hashedPassword,
       name: '管理者',
     },
   });
 
-  console.log('✅ ユーザー情報をbcryptjsで暗号化し更新しました');
+  console.log('✅ 本番環境に管理者ユーザーを登録/更新しました');
 }
 
 main()
