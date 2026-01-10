@@ -1,9 +1,11 @@
-"use client"; // URLを判定するために必要です
+"use client";
 
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { FolderOpen, LayoutDashboard, LogOut } from "lucide-react";
+import { signOut, SessionProvider } from "next-auth/react";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -12,50 +14,67 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname(); // 今どのページにいるかを取得
+  const pathname = usePathname();
 
-  // 現在のページによってボタンのスタイルを変える関数
+  // ログイン画面ではサイドバーを表示しない
+  const isLoginPage = pathname === "/login";
+
   const getBtnClass = (path: string) => {
-    const isActive = pathname === path;
+    const isActive = pathname.startsWith(path);
     return isActive
-      ? "bg-white text-[#FD9D24] shadow-sm" // アクティブ時（白背景）
-      : "text-white/80 hover:bg-white/10";  // 非アクティブ時（透明背景）
+      ? "bg-white text-[#FD9D24] shadow-sm"
+      : "text-white/80 hover:bg-white/10";
   };
 
   return (
     <html lang="ja">
       <body className={`${inter.className} m-0 p-0 bg-white`}>
-        <div className="flex h-screen overflow-hidden font-sans text-slate-600 bg-white">
-          
-          {/* サイドバー */}
-          <aside className="w-64 flex flex-col flex-shrink-0 z-30" style={{ backgroundColor: "#FD9D24" }}>
-            <div 
-              className="flex items-center px-6 font-black text-slate-800 text-3xl italic gap-4 border-b border-slate-100 flex-shrink-0" 
-              style={{ backgroundColor: "#ffffff", height: "128px" }}
-            >
-              PORTAL
-              <img src="/logo.png" alt="logo" className="h-16 w-auto object-contain" />
+        <SessionProvider>
+          <div className="flex h-screen overflow-hidden font-sans text-slate-600 bg-white">
+            
+            {!isLoginPage && (
+              <aside className="w-64 flex flex-col flex-shrink-0 z-30 shadow-xl" style={{ backgroundColor: "#FD9D24" }}>
+                <div 
+                  className="flex items-center px-6 bg-white font-black text-slate-800 text-3xl italic gap-4 border-b border-slate-100 flex-shrink-0" 
+                  style={{ height: "128px" }}
+                >
+                  PORTAL
+                  <img src="/logo.png" alt="logo" className="h-16 w-auto object-contain" />
+                </div>
+
+                <nav className="p-4 space-y-2 mt-4 text-white flex-1 overflow-y-auto">
+                  <Link href="/brokerage">
+                    <div className={`p-4 rounded-xl font-bold text-center text-sm cursor-pointer transition-all flex items-center justify-center gap-2 ${getBtnClass("/brokerage")}`}>
+                      <LayoutDashboard size={18} />
+                      物件管理
+                    </div>
+                  </Link>
+
+                  <Link href="/documents">
+                    <div className={`p-4 rounded-xl font-bold text-center text-sm cursor-pointer transition-all flex items-center justify-center gap-2 ${getBtnClass("/documents")}`}>
+                      <FolderOpen size={18} />
+                      物件資料
+                    </div>
+                  </Link>
+                </nav>
+
+                <div className="p-4 border-t border-white/10 mt-auto">
+                  <button 
+                    onClick={() => signOut({ callbackUrl: "/login" })}
+                    className="w-full p-4 rounded-xl font-bold text-white/60 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2 text-sm"
+                  >
+                    <LogOut size={18} />
+                    ログアウト
+                  </button>
+                </div>
+              </aside>
+            )}
+
+            <div className="flex-1 flex flex-col overflow-hidden bg-white">
+              {children}
             </div>
-
-            <nav className="p-4 space-y-2 mt-4 text-white">
-              <Link href="/brokerage">
-                <div className={`p-3 rounded-xl font-bold text-center text-sm cursor-pointer transition-all ${getBtnClass("/brokerage")}`}>
-                  物件管理
-                </div>
-              </Link>
-              <Link href="/documents">
-                <div className={`p-3 rounded-xl font-bold text-center text-sm cursor-pointer transition-all ${getBtnClass("/documents")}`}>
-                  物件資料
-                </div>
-              </Link>
-            </nav>
-          </aside>
-
-          {/* 右側メインエリア */}
-          <div className="flex-1 flex flex-col overflow-hidden bg-white">
-            {children}
           </div>
-        </div>
+        </SessionProvider>
       </body>
     </html>
   );

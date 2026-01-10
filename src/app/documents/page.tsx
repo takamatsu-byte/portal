@@ -1,138 +1,174 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search, Loader2, ChevronRight } from "lucide-react";
-import { createProjectAction } from "@/app/actions";
+import { Folder, Search, Grid, List, ChevronRight, Loader2, X, Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
 
 interface Project {
   id: string;
   propertyAddress: string | null;
-  status: string;
-  contractDate?: string | null;
-  settlementDate?: string | null;
+  updatedAt: string;
 }
 
 export default function DocumentsPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [isFetching, setIsFetching] = useState(true);
-  const [address, setAddress] = useState("");
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newProjectName, setNewProjectName] = useState("");
+
+  const fetchProjects = async () => {
+    try {
+      const res = await fetch("/api/projects");
+      const data = await res.json();
+      setProjects(data);
+    } catch (error) {
+      console.error("Fetch error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchProjects();
   }, []);
 
-  const fetchProjects = async () => {
+  const handleSave = async () => {
+    if (!newProjectName) return;
     try {
-      const response = await fetch("/api/projects");
-      const data = await response.json();
-      setProjects(data);
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ propertyAddress: newProjectName }),
+      });
+      if (res.ok) {
+        setNewProjectName("");
+        setIsModalOpen(false);
+        fetchProjects();
+      }
     } catch (error) {
-      console.error("データ取得失敗:", error);
-    } finally {
-      setIsFetching(false);
+      console.error("Save error:", error);
     }
   };
 
-  const handleAddProject = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!address) return;
-    setLoading(true);
-    const result = await createProjectAction(address);
-    if (result.success) {
-      setAddress("");
-      setIsModalOpen(false);
-      fetchProjects();
-    }
-    setLoading(false);
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleString("ja-JP", {
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit"
+    });
   };
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-[#f8f9fa]">
+        <Loader2 className="animate-spin text-[#FD9D24]" size={48} />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col h-full bg-white">
-      {/* ヘッダー：左側の縦線を消し、高さをpxで固定して一体化 */}
-      <header 
-        className="flex items-center justify-end px-10 flex-shrink-0 border-b border-slate-100"
-        style={{ backgroundColor: "#ffffff", height: "128px" }}
-      >
-        <div className="inline-flex items-center rounded-full border border-slate-200 bg-white shadow-sm h-12 overflow-hidden">
+    <div className="flex flex-col h-full bg-white font-sans overflow-hidden relative">
+      <header className="flex items-center justify-end px-10 flex-shrink-0 border-b border-slate-100" style={{ height: "128px" }}>
+        
+        {/* 修正箇所: ボタンユニットのみ変更 */}
+        <div className="inline-flex items-center rounded-full border border-slate-200 bg-white shadow-sm h-12 overflow-hidden px-2">
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="px-8 h-full font-bold text-slate-700 hover:text-white hover:bg-[#FD9D24] transition-all border-r outline-none"
+            className="p-3 text-slate-700 hover:text-[#FD9D24] transition-all outline-none"
           >
-            ＋ 追加
+            <Plus size={20} strokeWidth={3} />
           </button>
-          <button disabled className="px-8 h-full font-bold border-r outline-none text-slate-300">編集</button>
-          <button disabled className="px-8 h-full font-bold outline-none text-slate-300">削除</button>
+          <button 
+            disabled={!selectedId}
+            className={`p-3 outline-none transition-all ${selectedId ? "text-slate-400 hover:text-red-500" : "text-slate-200"}`}
+          >
+            <Trash2 size={20} />
+          </button>
         </div>
+        {/* 修正箇所おわり */}
+
       </header>
 
-      {/* メインエリア */}
-      <main className="flex-1 p-8 overflow-hidden bg-[#f8f9fa]">
+      <main className="flex-1 p-6 overflow-hidden bg-[#f8f9fa]">
         <div className="h-full bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-          {/* 検索バー */}
-          <div className="p-6 border-b border-slate-50 flex justify-center">
-            <div className="max-w-[600px] w-full relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-              <input type="text" placeholder="物件名・所在で検索..." className="w-full pl-12 pr-4 py-3 rounded-full border-none bg-slate-50 focus:ring-2 focus:ring-orange-500 transition-all text-sm"/>
+          <div className="p-4 border-b border-slate-50 flex items-center justify-between bg-white/50">
+            <div className="max-w-[360px] w-full relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+              <input 
+                type="text" 
+                placeholder="物件名を検索..." 
+                className="w-full pl-11 pr-4 py-2 rounded-full border-none bg-slate-50 focus:ring-2 focus:ring-orange-500 transition-all text-xs font-bold text-slate-800 outline-none" 
+              />
+            </div>
+            <div className="flex bg-slate-100 p-1 rounded-xl shadow-inner">
+              <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? "bg-white text-slate-800 shadow-sm" : "text-slate-500"}`}><List size={16} /></button>
+              <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? "bg-white text-slate-800 shadow-sm" : "text-slate-500"}`}><Grid size={16} /></button>
             </div>
           </div>
 
-          {/* 一覧テーブル */}
-          <div className="flex-1 overflow-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-100 text-[11px] font-black text-slate-400 sticky top-0 z-10 h-14 uppercase tracking-widest text-center">
-                  <th className="px-8 text-left sticky left-0 bg-slate-50 z-20">種別</th>
-                  <th className="px-8 text-left">物件名・所在</th>
-                  <th className="px-4">契約予定日</th>
-                  <th className="px-4">決済予定日</th>
-                  <th className="px-8 text-right"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50 text-center">
-                {isFetching ? (
-                  <tr><td colSpan={5} className="py-32 animate-pulse text-slate-300 italic font-black">LOADING...</td></tr>
-                ) : projects.length === 0 ? (
-                  <tr><td colSpan={5} className="py-32 text-center text-slate-300 font-bold font-sans">物件を登録して、資料の管理を始めましょう</td></tr>
-                ) : (
-                  projects.map((p) => (
-                    <tr key={p.id} className="group cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => window.location.href = `/documents/${p.id}`}>
-                      <td className="px-8 py-5 text-left sticky left-0 bg-inherit"><span className="bg-blue-50 text-blue-500 text-[10px] px-3 py-1 rounded-full font-black uppercase">PROSPECT</span></td>
-                      <td className="px-8 py-5 text-left font-black text-slate-800 whitespace-nowrap">{p.propertyAddress || "-"}</td>
-                      <td className="px-4 py-5 font-bold text-slate-400">{p.contractDate || "未定"}</td>
-                      <td className="px-4 py-5 font-bold text-slate-400">{p.settlementDate || "未定"}</td>
-                      <td className="px-8 py-5 text-right">
-                        <ChevronRight size={20} className="text-slate-200 group-hover:text-orange-500 transition-colors inline" />
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          <div className="flex-1 overflow-auto p-4 custom-scrollbar">
+            {viewMode === 'list' ? (
+              <div className="grid grid-cols-4 gap-3">
+                {projects.map((project) => (
+                  <div 
+                    key={project.id} 
+                    onClick={() => setSelectedId(project.id)}
+                    className={`flex items-center justify-between px-3 py-4 rounded-2xl border transition-all cursor-pointer group ${selectedId === project.id ? "bg-orange-50 border-orange-200 shadow-sm" : "bg-white border-slate-100 hover:border-orange-100 hover:bg-slate-50"}`}
+                  >
+                    <div className="flex items-center gap-2.5 flex-1 truncate">
+                      <Folder size={24} className="text-[#FD9D24] fill-orange-50 flex-shrink-0" />
+                      <div className="flex flex-col truncate">
+                        <Link href={`/documents/${project.id}`} className="text-base font-black text-slate-800 truncate hover:underline leading-tight">{project.propertyAddress || "名称未設定"}</Link>
+                        <span className="text-[9px] font-bold text-slate-400 mt-0.5">{formatDate(project.updatedAt)}</span>
+                      </div>
+                    </div>
+                    <ChevronRight size={14} className="text-slate-200 group-hover:text-orange-500 transition-colors flex-shrink-0 ml-1" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-6">
+                {projects.map((project) => (
+                  <div key={project.id} onClick={() => setSelectedId(project.id)} className={`flex flex-col items-center gap-3 p-4 rounded-[2rem] transition-all cursor-pointer group text-center ${selectedId === project.id ? "bg-orange-50 ring-2 ring-orange-200 shadow-sm" : "hover:bg-slate-50"}`}>
+                    <div className="w-14 h-14 bg-orange-50 rounded-2xl flex items-center justify-center text-[#FD9D24] shadow-sm group-hover:scale-105 transition-transform">
+                      <Folder size={28} className="fill-orange-100/50" />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-black text-slate-800 line-clamp-2">{project.propertyAddress || "名称未設定"}</span>
+                      <span className="text-[8px] font-bold text-slate-400 block tracking-tighter">{formatDate(project.updatedAt)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </main>
 
-      {/* 新規登録モーダル */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
-          <div className="relative w-full max-w-md bg-white rounded-[2rem] p-10 shadow-2xl animate-in zoom-in duration-200">
-            <h2 className="text-xl font-black mb-8 tracking-tighter uppercase text-center border-b pb-4 text-slate-800">New Property</h2>
-            <form onSubmit={handleAddProject} className="space-y-8 text-left">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 backdrop-blur-sm p-4">
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-8 border border-slate-100 animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-black text-slate-800 tracking-tighter">新規物件の登録</h2>
+              <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X size={20} className="text-slate-400" /></button>
+            </div>
+            <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">物件名・所在</label>
-                <input required type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="例：岐阜市八ツ梅町" className="w-full border-2 p-4 rounded-2xl font-bold bg-slate-50 outline-none focus:border-orange-500 transition-all text-lg text-slate-800"/>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">物件名</label>
+                <input 
+                  autoFocus
+                  type="text" 
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  placeholder="例：岐阜市八ツ梅町 土地"
+                  className="w-full border-2 p-4 rounded-2xl font-bold bg-slate-50 outline-none focus:border-[#FD9D24] transition-all text-sm text-slate-800"
+                />
               </div>
-              <div className="flex gap-4">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 border-2 p-5 rounded-2xl font-black text-slate-400 text-xs uppercase tracking-widest hover:bg-slate-50 transition-all">Cancel</button>
-                <button type="submit" disabled={loading} className="flex-1 bg-slate-800 text-white p-5 rounded-2xl font-black shadow-xl hover:bg-slate-700 transition-all text-xs uppercase tracking-widest flex items-center justify-center gap-2">
-                  {loading && <Loader2 size={16} className="animate-spin" />}
-                  Save & Start
-                </button>
-              </div>
-            </form>
+              <button onClick={handleSave} className="w-full py-4 bg-[#FD9D24] text-white font-black rounded-2xl shadow-xl shadow-orange-100 hover:bg-orange-500 transition-all uppercase tracking-widest text-xs mt-4">物件を作成する</button>
+            </div>
           </div>
         </div>
       )}
