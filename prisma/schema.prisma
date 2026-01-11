@@ -12,15 +12,15 @@ datasource db {
 }
 
 // ==========================================
-// 【追加】ユーザー管理（ログイン用）
+// ユーザー管理（ログイン用）
 // ==========================================
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  password      String    // 暗号化されたパスワードを保存
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  name      String?
+  email     String   @unique
+  password  String   // 暗号化されたパスワードを保存
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // 案件の状態（進行中、または完了後の種別）
@@ -36,48 +36,48 @@ model Project {
   id                  String        @id @default(cuid())
   status              ProjectStatus @default(PROSPECT) // 最初は「検討中」
   code                String?       // 管理コード
-  propertyAddress      String?       // 所在（物件名）
-  propertyPrice        Float?        // 仕入れ・物件価格
-  acquisitionCost      Float?        // 経費合計
-  projectTotal         Float?        // 総額
+  propertyAddress     String?       // 所在（物件名）
+  propertyPrice       Float?        // 仕入れ・物件価格
+  acquisitionCost     Float?        // 経費合計
+  projectTotal        Float?        // 総額
   googleDriveFolderId String?       // GoogleドライブフォルダID
   
   // 【収益用項目】
   expectedRent        Float?        // 想定家賃
-  expectedYieldBp      Float?        // 想定利回り
-  agentRent            Float?        // 客付家賃
-  surfaceYieldBp       Float?        // 表面利回り
+  expectedYieldBp     Float?        // 想定利回り
+  agentRent           Float?        // 客付家賃
+  surfaceYieldBp      Float?        // 表面利回り
 
   // 【転売・販売用項目】
-  expectedSalePrice    Float?        // 販売予定価格
-  actualSalePrice      Float?        // 実際の成約価格
+  expectedSalePrice   Float?        // 販売予定価格
+  actualSalePrice     Float?        // 実際の成約価格
 
   // 【仲介用項目】
-  brokerageSales       Float?        // 仲介手数料などの売上
+  brokerageSales      Float?        // 仲介手数料などの売上
 
   // 【土地情報】(共通)
-  landLotNumber        String?       // 地番
-  landCategory         String?       // 地目
-  landArea             Float?        // 地積(㎡)
-  landOwnerAddress     String?       // 土地所有者住所
-  landOwnerName        String?       // 土地所有者名
+  landLotNumber       String?       // 地番
+  landCategory        String?       // 地目
+  landArea            Float?        // 地積(㎡)
+  landOwnerAddress    String?       // 土地所有者住所
+  landOwnerName       String?       // 土地所有者名
 
   // 【建物情報】(共通)
   buildingHouseNumber String?       // 家屋番号
-  buildingType         String?       // 種類
-  buildingStructure    String?       // 構造
-  buildingFloors       String?       // 床面積
-  buildingAge          String?       // 築年数
+  buildingType        String?       // 種類
+  buildingStructure   String?       // 構造
+  buildingFloors      String?       // 床面積
+  buildingAge         String?       // 築年数
   buildingOwnerAddress String?       // 建物所有者住所
-  buildingOwnerName    String?       // 建物所有者名
+  buildingOwnerName   String?       // 建物所有者名
 
   // 【スケジュール】(共通)
-  contractDate         String?       // 契約日
-  settlementDate       String?       // 決済日
+  contractDate        String?       // 契約日
+  settlementDate      String?       // 決済日
   
   expenses            ExpenseItem[] // 経費の内訳
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
 }
 
 // 経費の内訳（どの物件にも紐付けられます）
@@ -88,7 +88,8 @@ model ExpenseItem {
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
-// 既存のUserテーブルの下に以下を追加
+
+// 編集内容のログ（履歴）機能
 model AuditLog {
   id        String   @id @default(cuid())
   userId    String   // 操作したユーザーのID

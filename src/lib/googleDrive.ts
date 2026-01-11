@@ -5,12 +5,9 @@ const SCOPES = ["https://www.googleapis.com/auth/drive"];
 export const getDriveClient = () => {
   const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   
-  // 秘密鍵の読み込み（Vercelの環境変数で起こりやすい改行エラーを徹底補正）
+  // 秘密鍵の補正（改行コードの復元と不要な引用符の削除）
   let privateKey = process.env.GOOGLE_PRIVATE_KEY;
-  
   if (privateKey) {
-    // 1. 文字列としての "\n" を実際の改行に変換
-    // 2. もし全体が引用符で囲まれていたら削除
     privateKey = privateKey.replace(/\\n/g, "\n").replace(/^"(.*)"$/, "$1");
   }
 
@@ -27,9 +24,6 @@ export const getDriveClient = () => {
   return google.drive({ version: "v3", auth });
 };
 
-/**
- * 指定した名前でGoogle Drive上にフォルダを作成し、そのIDを返す
- */
 export const createFolder = async (folderName: string, parentId?: string): Promise<string> => {
   try {
     const drive = getDriveClient();
