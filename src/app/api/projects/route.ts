@@ -22,11 +22,30 @@ export async function POST(request: Request) {
     const newProject = await prisma.project.create({
       data: {
         propertyAddress: body.propertyAddress,
-        // 必要に応じて初期値を設定
       }
     });
     return NextResponse.json(newProject);
   } catch (error) {
     return NextResponse.json({ error: "作成失敗" }, { status: 500 });
+  }
+}
+
+// 閲覧日時の更新 (PATCH)
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json();
+    const { id } = body;
+
+    if (!id) return NextResponse.json({ error: "IDが必要です" }, { status: 400 });
+
+    const updatedProject = await prisma.project.update({
+      where: { id: id },
+      data: {
+        updatedAt: new Date(), // 強制的に現在時刻へ更新
+      },
+    });
+    return NextResponse.json(updatedProject);
+  } catch (error) {
+    return NextResponse.json({ error: "更新失敗" }, { status: 500 });
   }
 }

@@ -1,116 +1,180 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { FileText, ExternalLink, Loader2, RefreshCw, FolderOpen, AlertCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Search, Plus, Trash2, ChevronRight, Loader2, X, Inbox } from "lucide-react";
+import Link from "next/link";
 
-interface DriveFile {
-  id: string;
-  name: string;
-  mimeType: string;
-  webViewLink: string;
-  thumbnailLink?: string;
-  modifiedTime: string;
-}
-
-export default function DocumentsPage() {
-  const [files, setFiles] = useState<DriveFile[]>([]);
+export default function DocumentsExplorerPage() {
+  const router = useRouter();
+  const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newProjectName, setNewProjectName] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchFiles = async () => {
-    setLoading(true);
-    setError("");
+  const fetchProjects = async () => {
     try {
-      const res = await fetch("/api/documents"); // 修正後のAPIパス
+      const res = await fetch("/api/projects");
       const data = await res.json();
-      if (res.ok) {
-        setFiles(data);
-      } else {
-        setError(data.error || "データの取得に失敗しました。");
-      }
-    } catch (e) {
-      setError("サーバーとの通信に失敗しました。");
+      setProjects(data);
+    } catch (error) {
+      console.error("Fetch error:", error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchFiles();
+    fetchProjects();
   }, []);
 
-  return (
-    <div className="p-10 bg-white min-h-screen">
-      <header className="flex justify-between items-end mb-12 border-b border-slate-100 pb-8">
-        <div>
-          <h1 className="text-4xl font-black italic tracking-tighter text-slate-800 uppercase">Documents</h1>
-          <p className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase mt-2 flex items-center gap-2">
-            <span className="w-2 h-2 bg-[#FD9D24] rounded-full animate-pulse"></span>
-            Cloud Storage Service Active
-          </p>
-        </div>
-        <button 
-          onClick={fetchFiles}
-          disabled={loading}
-          className="flex items-center gap-2 px-6 py-3 bg-[#FD9D24] text-white rounded-2xl font-black text-xs hover:bg-orange-500 transition-all shadow-md disabled:opacity-50"
-        >
-          {loading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
-          更新
-        </button>
-      </header>
+  const handleCreate = async () => {
+    const trimmedName = newProjectName.trim();
+    if (!trimmedName) return;
+    if (projects.some(p => p.propertyAddress?.toLowerCase() === trimmedName.toLowerCase())) {
+      setError("すでに同じ名称のファイルがあります");
+      return;
+    }
+    try {
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ propertyAddress: trimmedName }),
+      });
+      if (res.ok) {
+        setNewProjectName("");
+        setError(null);
+        setIsModalOpen(false);
+        fetchProjects();
+      }
+    } catch (error) {
+      setError("作成に失敗しました");
+    }
+  };
 
-      {error && (
-        <div className="mb-8 p-6 bg-red-50 border border-red-100 rounded-[2rem] text-red-600 font-bold text-sm flex items-center gap-3">
-          <AlertCircle size={20} />
-          <div>
-            {error}
-            <p className="text-[10px] mt-1 text-red-400 uppercase">環境変数または共有設定を確認してください</p>
-          </div>
+  const handleDelete = async () => {
+    if (!selectedId) return;
+    if (window.confirm("選択した物件を削除してもよろしいですか？")) {
+      try {
+        const res = await fetch(`/api/projects/${selectedId}`, { method: "DELETE" });
+        if (res.ok) {
+          setSelectedId(null);
+          fetchProjects();
+        }
+      } catch (error) {
+        alert("削除に失敗しました");
+      }
+    }
+  };
+
+  const filteredAndSortedProjects = projects
+    .filter(p => (p.propertyAddress || "").toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  return (
+    <div className="p-8 bg-white min-h-screen relative">
+      {/* ヘッダー */}
+      <div className="flex items-center justify-end h-16 mb-12">
+        <div className="flex items-center bg-white border border-slate-200 rounded-full shadow-sm overflow-hidden h-10">
+          <button 
+            onClick={() => { setError(null); setNewProjectName(""); setIsModalOpen(true); }}
+            className="px-5 h-full text-slate-400 hover:text-orange-500 hover:bg-slate-50 border-r border-slate-100"
+          >
+            <Plus size={18} />
+          </button>
+          <button 
+            onClick={handleDelete}
+            className={`px-5 h-full ${selectedId ? 'text-red-500 hover:bg-red-50' : 'text-slate-200'}`}
+          >
+            <Trash2 size={18} />
+          </button>
+        </div>
+      </div>
+
+      {/* 検索窓 */}
+      <div className="flex items-center justify-between mb-10 bg-slate-50/50 p-2 rounded-2xl">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+          <input 
+            type="text" 
+            placeholder="物件を検索..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-12 pr-12 py-3 bg-white border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-orange-500 shadow-sm"
+          />
+        </div>
+      </div>
+
+      {/* グリッド */}
+      {loading ? (
+        <div className="flex justify-center py-20"><Loader2 className="animate-spin text-orange-500" /></div>
+      ) : filteredAndSortedProjects.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {filteredAndSortedProjects.map((project) => {
+            const createDate = new Date(project.createdAt);
+            return (
+              <div 
+                key={project.id}
+                onClick={() => setSelectedId(selectedId === project.id ? null : project.id)}
+                className={`flex flex-col p-4 rounded-2xl transition-all cursor-pointer border ${
+                  selectedId === project.id 
+                    ? "bg-orange-100/50 border-orange-500 shadow-sm" 
+                    : "bg-orange-50/30 border-orange-100 hover:bg-orange-50"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <Link 
+                    href={`/documents/${project.id}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="font-bold text-slate-800 text-sm line-clamp-1 hover:text-orange-600 transition-colors"
+                  >
+                    {project.propertyAddress || "名称未設定"}
+                  </Link>
+                  <Link
+                    href={`/documents/${project.id}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-slate-300 hover:text-orange-500"
+                  >
+                    <ChevronRight size={16} />
+                  </Link>
+                </div>
+                <span className="text-[10px] font-bold text-slate-400">
+                  {createDate.toLocaleDateString()} {createDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-24 bg-slate-50/30 rounded-3xl border border-dashed border-slate-200">
+          <Inbox size={32} className="mb-4 text-slate-200" />
+          <p className="text-sm font-bold text-slate-400">物件がありません</p>
         </div>
       )}
 
-      {loading && files.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-96 text-slate-200">
-          <Loader2 className="animate-spin mb-4" size={48} />
-          <p className="font-black tracking-widest text-xs uppercase text-slate-400">Connecting to Google Drive...</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {files.map((file) => (
-            <div key={file.id} className="group bg-white border border-slate-100 rounded-[2.5rem] p-6 hover:shadow-2xl hover:shadow-orange-100 transition-all duration-500">
-              <div className="aspect-[4/3] bg-slate-50 rounded-[1.5rem] mb-6 overflow-hidden flex items-center justify-center border border-slate-50 relative">
-                {file.thumbnailLink ? (
-                  <img src={file.thumbnailLink.replace("s220", "s400")} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700" />
-                ) : (
-                  <FileText size={48} className="text-slate-200" />
-                )}
-              </div>
-              
-              <div className="mb-6">
-                <h3 className="font-black text-slate-700 text-sm line-clamp-2 min-h-[2.5rem] mb-2">{file.name}</h3>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter italic">
-                  Last Update: {new Date(file.modifiedTime).toLocaleString('ja-JP')}
-                </p>
-              </div>
-
-              <a 
-                href={file.webViewLink} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-4 bg-slate-800 text-white rounded-2xl font-black text-xs hover:bg-slate-700 transition-all"
-              >
-                <ExternalLink size={14} />
-                ファイルを開く
-              </a>
+      {/* モーダル */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-[2px]">
+          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6">
+            <h2 className="text-lg font-bold mb-6">新規物件の追加</h2>
+            <div className="mb-6">
+              <input 
+                type="text" autoFocus value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+                placeholder="物件名称を入力"
+                className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl text-sm"
+              />
+              {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
             </div>
-          ))}
-
-          {!loading && files.length === 0 && !error && (
-            <div className="col-span-full py-20 text-center border-2 border-dashed border-slate-100 rounded-[3rem]">
-              <FolderOpen size={48} className="mx-auto text-slate-200 mb-4" />
-              <p className="font-black text-slate-400 text-sm uppercase tracking-widest">フォルダ内にファイルがありません</p>
+            <div className="flex gap-3">
+              <button onClick={() => setIsModalOpen(false)} className="flex-1 py-3 text-sm font-bold text-slate-500">キャンセル</button>
+              <button onClick={handleCreate} className="flex-1 py-3 bg-[#FD9D24] text-white text-sm font-bold rounded-xl">作成</button>
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>
