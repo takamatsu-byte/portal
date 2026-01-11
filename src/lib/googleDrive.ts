@@ -21,11 +21,11 @@ export const getDriveClient = () => {
 };
 
 /**
- * 指定した名前でGoogle Drive上にフォルダを作成する
+ * 指定した名前でGoogle Drive上にフォルダを作成し、そのIDを返す
  * @param folderName 作成するフォルダ名
  * @param parentId 作成先の親フォルダID（任意）
  */
-export const createFolder = async (folderName: string, parentId?: string) => {
+export const createFolder = async (folderName: string, parentId?: string): Promise<string> => {
   try {
     const drive = getDriveClient();
     const fileMetadata = {
@@ -36,10 +36,13 @@ export const createFolder = async (folderName: string, parentId?: string) => {
 
     const folder = await drive.files.create({
       requestBody: fileMetadata,
-      fields: "id, name",
+      fields: "id",
     });
 
-    return folder.data;
+    const folderId = folder.data.id;
+    if (!folderId) throw new Error("フォルダIDの取得に失敗しました");
+
+    return folderId; // 文字列(ID)のみを返す
   } catch (error) {
     console.error("Google Drive createFolder Error:", error);
     throw error;
