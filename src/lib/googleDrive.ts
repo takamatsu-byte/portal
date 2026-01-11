@@ -10,20 +10,18 @@ export const getDriveClient = () => {
     throw new Error("Google Driveの環境変数が設定されていません。");
   }
 
-  const auth = new google.auth.JWT(
-    clientEmail,
-    undefined,
-    privateKey,
-    SCOPES
-  );
+  // 引数をオブジェクト形式 { email, key, scopes } で渡すように修正
+  const auth = new google.auth.JWT({
+    email: clientEmail,
+    key: privateKey,
+    scopes: SCOPES,
+  });
 
   return google.drive({ version: "v3", auth });
 };
 
 /**
  * 指定した名前でGoogle Drive上にフォルダを作成し、そのIDを返す
- * @param folderName 作成するフォルダ名
- * @param parentId 作成先の親フォルダID（任意）
  */
 export const createFolder = async (folderName: string, parentId?: string): Promise<string> => {
   try {
@@ -42,7 +40,7 @@ export const createFolder = async (folderName: string, parentId?: string): Promi
     const folderId = folder.data.id;
     if (!folderId) throw new Error("フォルダIDの取得に失敗しました");
 
-    return folderId; // 文字列(ID)のみを返す
+    return folderId;
   } catch (error) {
     console.error("Google Drive createFolder Error:", error);
     throw error;
