@@ -4,13 +4,20 @@ const SCOPES = ["https://www.googleapis.com/auth/drive"];
 
 export const getDriveClient = () => {
   const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  
+  // 秘密鍵の読み込み（Vercelの環境変数で起こりやすい改行エラーを徹底補正）
+  let privateKey = process.env.GOOGLE_PRIVATE_KEY;
+  
+  if (privateKey) {
+    // 1. 文字列としての "\n" を実際の改行に変換
+    // 2. もし全体が引用符で囲まれていたら削除
+    privateKey = privateKey.replace(/\\n/g, "\n").replace(/^"(.*)"$/, "$1");
+  }
 
   if (!clientEmail || !privateKey) {
     throw new Error("Google Driveの環境変数が設定されていません。");
   }
 
-  // 引数をオブジェクト形式 { email, key, scopes } で渡すように修正
   const auth = new google.auth.JWT({
     email: clientEmail,
     key: privateKey,
