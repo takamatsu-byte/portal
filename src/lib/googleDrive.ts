@@ -1,19 +1,23 @@
-/**
- * Googleドライブ連携（簡易版）
- * 複雑なサービスアカウントを使わず、APIキーのみで動作を確認するための設定です。
- */
+import { google } from "googleapis";
 
-export async function createFolder(folderName: string) {
-  try {
-    // 本来はここでフォルダを作りますが、
-    // まずはエラーを消してシステムを動かすため、
-    // 「フォルダを作ったフリ」をして、ダミーのIDを返します。
-    console.log(`${folderName} 用のフォルダ作成命令を受け取領しました（簡易版）`);
-    
-    // ダミーのフォルダID（後で本番用に差し替えます）
-    return "dummy_folder_id_" + Date.now();
-  } catch (error) {
-    console.error("簡易フォルダ作成エラー:", error);
-    return "error_id";
+// 読み取り・書き込みの両方の権限を設定
+const SCOPES = ["https://www.googleapis.com/auth/drive"];
+
+export const getDriveClient = () => {
+  // 環境変数から情報を取得
+  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+
+  if (!clientEmail || !privateKey) {
+    throw new Error("Google Driveの環境変数が設定されていません。");
   }
-}
+
+  const auth = new google.auth.JWT(
+    clientEmail,
+    undefined,
+    privateKey,
+    SCOPES
+  );
+
+  return google.drive({ version: "v3", auth });
+};
